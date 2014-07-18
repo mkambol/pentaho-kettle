@@ -22,16 +22,6 @@
 
 package org.pentaho.di.trans.sql;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
@@ -55,6 +45,14 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.RowAdapter;
 import org.pentaho.di.trans.step.RowListener;
 import org.pentaho.di.trans.step.StepInterface;
+import org.pentaho.di.trans.step.StepMeta;
+import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
+
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class SqlTransExecutor {
   private TransMeta serviceTransMeta;
@@ -81,6 +79,8 @@ public class SqlTransExecutor {
   private SimpleDateFormat sqlDateFormat;
   private SimpleDateFormat jsonDateFormat;
   private List<Object[]> serviceData;
+
+  private Map<String, String> targetFieldToConditionMap = new HashMap<String, String>();
 
   /**
    * Create a new SqlTransExecutor without parameters
@@ -178,8 +178,56 @@ public class SqlTransExecutor {
     }
   }
 
+  /**
+   * If a WHERE condition is in place, iterates through the atomic conditions,
+   * saving any predicates associated with field mappings to the
+   * targetFieldToConditionMap.  Later we'll determine which of these predicates
+   * are applicable to which step.
+   */
+  private void handleMappedFields() throws UnknownParamException, KettleValueException {
+    if ( sql.getWhereCondition() == null || !isSimpleCondition() ) {
+      return; // nothing to do here.
+    }
+    Condition condition = sql.getWhereCondition().getCondition();
+    List<Condition> atomicConditions = new ArrayList<Condition>();
+    extractAtomicConditions( condition, atomicConditions );
+
+    for ( Condition atomicCondition : atomicConditions ) {
+      FieldVariableMapping associatedMapping = findMappingAssociatedWithCondition( atomicCondition );
+      if ( associatedMapping != null ) {
+        String target = associatedMapping.getTargetName();
+        if ( target == null ) {
+          target = associatedMapping.getFieldName();
+        }
+        targetFieldToConditionMap.put( target,
+          convertAtomicCondition( atomicCondition, associatedMapping.getMappingType()) );
+      }
+    }
+  }
+
+  private String convertAtomicCondition( Condition atomicCondition,
+                                         FieldVariableMapping.MappingType mappingType )
+    throws KettleValueException {
+    switch ( mappingType ) {
+      case SQL_WHERE :
+        return convertConditionToSql( atomicCondition );
+      case JSON_QUERY:
+        return convertConditionToJson( atomicCondition );
+    }
+    return "";
+  }
+
+  private FieldVariableMapping findMappingAssociatedWithCondition( Condition atomicCondition ) {
+    for ( FieldVariableMapping mapping :  service.getFieldVariableMappings() ) {
+      if ( mapping.getFieldName().equals( atomicCondition.getLeftValuename() ) ) {
+        return mapping;
+      }
+    }
+    return null;
+  }
+
   private void setAutomaticParameterValues() throws UnknownParamException, KettleValueException {
-    if ( sql.getWhereCondition() == null ) {
+    if ( sql.getWhereCondition() == null || !isSimpleCondition() ) {
       return; // nothing to do here.
     }
     Condition condition = sql.getWhereCondition().getCondition();
@@ -201,6 +249,25 @@ public class SqlTransExecutor {
           break;
       }
     }
+  }
+
+  private boolean isSimpleCondition() {
+    Condition condition = sql.getWhereCondition().getCondition();
+    return condition.getChildren().size() == 0 ||
+      hasOnlyAndOperators( condition.getChildren() );
+  }
+
+  private boolean hasOnlyAndOperators( List<Condition> conditions ) {
+    for ( Condition condition : conditions ) {
+      if ( condition.getChildren().size() > 0 ) {
+        if ( condition.getOperator() != Condition.OPERATOR_AND ) {
+          return false;
+        } else {
+          return hasOnlyAndOperators( condition.getChildren() );
+        }
+      }
+    }
+    return true;
   }
 
   private String convertAtomicConditionToSql( Condition atomicCondition ) throws KettleValueException {
@@ -243,6 +310,10 @@ public class SqlTransExecutor {
       case Condition.FUNC_CONTAINS:
         sql.append( "LIKE" );
         break;
+      case Condition.FUNC_IN_LIST:
+        sql.append( "IN" );
+        break;
+
       default:
         break;
     }
@@ -262,7 +333,7 @@ public class SqlTransExecutor {
         FieldVariableMapping.findFieldVariableMappingByFieldName(
           service.getFieldVariableMappings(), atomicCondition.getRightValuename() );
       if ( mapping != null ) {
-        rightName = mapping.getVariableName();
+        rightName = mapping.getVariableName();  // !? Why is the variable name being put into the SQL here?
       }
       return rightName;
     }
@@ -472,7 +543,8 @@ public class SqlTransExecutor {
       // Activate parameters determined through the field-variable mapping
       // This is push-down optimization version 1.0
       //
-      setAutomaticParameterValues();
+      handleMappedFields(); // find any fields where a predicate should be pushed down
+      applyPushDown();  // attach those predicates to the appropriate step(s).
 
       serviceTransMeta.activateParameters();
 
@@ -571,6 +643,34 @@ public class SqlTransExecutor {
     genTrans.startThreads();
     if ( !service.isDual() ) {
       serviceTrans.startThreads();
+    }
+  }
+
+  private void applyPushDown() throws KettleStepException {
+    // iterate through each step in the trans, looking for fields that match one of the targetField
+    // specified in the FieldVariableMapping
+    for ( StepMeta step : serviceTransMeta.getSteps() ) {
+      if ( step.getTypeId().equals( "TableInput" ) ) {
+        applyPushDownToStep( (TableInputMeta) step.getStepMetaInterface() );
+      }
+    }
+  }
+
+  private void applyPushDownToStep( TableInputMeta step ) throws KettleStepException {
+    RowMetaInterface rowMeta = serviceTransMeta.getStepFields( step.getParentStepMeta().getName() ); // why parent?
+    StringBuilder build = new StringBuilder();
+    int index = 0;
+    for ( String fieldName : rowMeta.getFieldNames() ) {
+      if (targetFieldToConditionMap.containsKey( fieldName ) ) {
+        if ( index++ > 0) {
+          build.append( " AND " );
+        }
+        build.append( targetFieldToConditionMap.get( fieldName ) );
+      }
+    }
+    if ( build.length() > 0 ) {
+      step.setSQL( String.format("SELECT * FROM ( %s ) derived WHERE %s",
+        step.getSQL(), build.toString()) );
     }
   }
 
