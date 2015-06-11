@@ -30,16 +30,18 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchTimeoutException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchTimeoutException;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequest.OpType;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.client.action.index.IndexRequestBuilder;
+//import org.elasticsearch.client.action.bulk.BulkRequestBuilder;
+//import org.elasticsearch.client.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -341,10 +343,10 @@ public class ElasticSearchBulk extends BaseStep implements StepInterface {
       } else {
         response = actionFuture.actionGet();
       }
-    } catch ( ElasticSearchException e ) {
+    } catch ( ElasticsearchException e ) {
       String msg =
         BaseMessages.getString( PKG, "ElasticSearchBulk.Error.BatchExecuteFail", e.getLocalizedMessage() );
-      if ( e instanceof ElasticSearchTimeoutException ) {
+      if ( e instanceof ElasticsearchTimeoutException ) {
         msg = BaseMessages.getString( PKG, "ElasticSearchBulk.Error.Timeout" );
       }
       logError( msg );
@@ -391,16 +393,17 @@ public class ElasticSearchBulk extends BaseStep implements StepInterface {
       for ( BulkItemResponse item : response ) {
         if ( item.isFailed() ) {
           // log
-          logDetailed( item.failureMessage() );
+
+          logDetailed( item.getFailureMessage() );
           errorsInBatch++;
           if ( getStepMeta().isDoingErrorHandling() ) {
-            rejectRow( item.itemId(), item.failureMessage() );
+            rejectRow( item.getItemId(), item.getFailureMessage() );
           }
         } else if ( useOutput ) {
           if ( idOutFieldName != null ) {
-            addIdToRow( item.getId(), item.itemId() );
+            addIdToRow( item.getId(), item.getItemId() );
           }
-          echoRow( item.itemId() );
+          echoRow( item.getItemId() );
         }
       }
     }
