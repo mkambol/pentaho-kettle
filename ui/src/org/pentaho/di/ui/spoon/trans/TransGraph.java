@@ -189,6 +189,8 @@ import org.pentaho.di.ui.spoon.dialog.EnterPreviewRowsDialog;
 import org.pentaho.di.ui.spoon.dialog.NotePadDialog;
 import org.pentaho.di.ui.spoon.dialog.SearchFieldsProgressDialog;
 import org.pentaho.di.ui.spoon.job.JobGraph;
+import org.pentaho.di.ui.spoon.trans.executionstate.api.ExecutionStatePublisher;
+import org.pentaho.di.ui.spoon.trans.executionstate.impl.local.LocalExecutionStatePublisher;
 import org.pentaho.di.ui.trans.dialog.TransDialog;
 import org.pentaho.di.ui.xul.KettleXulLoader;
 import org.pentaho.ui.xul.XulDomContainer;
@@ -415,6 +417,10 @@ public class TransGraph extends AbstractGraph implements XulEventHandler, Redraw
 
     transLogDelegate = new TransLogDelegate( spoon, this );
     transGridDelegate = new TransGridDelegate( spoon, this );
+
+
+
+
     transHistoryDelegate = new TransHistoryDelegate( spoon, this );
     transPerfDelegate = new TransPerfDelegate( spoon, this );
     transMetricsDelegate = new TransMetricsDelegate( spoon, this );
@@ -3759,6 +3765,9 @@ public class TransGraph extends AbstractGraph implements XulEventHandler, Redraw
           trans =
             new Trans( transMeta, spoon.rep, transMeta.getName(), transMeta.getRepositoryDirectory().getPath(),
               transMeta.getFilename() );
+
+          ExecutionStatePublisher statePublisher = new LocalExecutionStatePublisher( spoon, trans );
+          statePublisher.subscribe( transGridDelegate );
 
           trans.setRepository( spoon.getRepository() );
           trans.setMetaStore( spoon.getMetaStore() );
