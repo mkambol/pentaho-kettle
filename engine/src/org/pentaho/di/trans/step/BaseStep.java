@@ -397,6 +397,17 @@ public class BaseStep implements VariableSpace, StepInterface, LoggingObjectInte
 
   protected Map<String, Object> extensionDataMap;
 
+
+  public RowHandler rowHandler = new RowHandler() {
+    @Override public Object[] getRow() throws KettleException {
+      return handleGetRow();
+    }
+
+    @Override public void putRow( RowMetaInterface rowMeta, Object[] row ) throws KettleStepException {
+      handlePutRow( rowMeta, row );
+    }
+  };
+
   /**
    * This is the base step that forms that basis for all steps. You can derive from this class to implement your own
    * steps.
@@ -1202,6 +1213,7 @@ public class BaseStep implements VariableSpace, StepInterface, LoggingObjectInte
     return trans;
   }
 
+
   /**
    * putRow is used to copy a row, to the alternate rowset(s) This should get priority over everything else!
    * (synchronized) If distribute is true, a row is copied only once to the output rowsets, otherwise copies are sent to
@@ -1213,6 +1225,11 @@ public class BaseStep implements VariableSpace, StepInterface, LoggingObjectInte
    */
   @Override
   public void putRow( RowMetaInterface rowMeta, Object[] row ) throws KettleStepException {
+    rowHandler.putRow( rowMeta, row );
+  }
+
+
+  private void handlePutRow( RowMetaInterface rowMeta, Object[] row ) throws KettleStepException {
     // Are we pausing the step? If so, stall forever...
     //
     while ( paused.get() && !stopped.get() ) {
@@ -1762,12 +1779,19 @@ public class BaseStep implements VariableSpace, StepInterface, LoggingObjectInte
     }
   }
 
+
+
   /**
    * In case of getRow, we receive data from previous steps through the input rowset. In case we split the stream, we
    * have to copy the data to the alternate splits: rowsets 1 through n.
    */
   @Override
   public Object[] getRow() throws KettleException {
+    return rowHandler.getRow();
+  }
+
+
+  private Object[] handleGetRow() throws KettleException {
 
     // Are we pausing the step? If so, stall forever...
     //
