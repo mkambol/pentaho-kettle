@@ -22,17 +22,18 @@
 
 package org.pentaho.di.core.variables;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableMap;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.pentaho.di.core.exception.KettleValueException;
+import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.value.ValueMetaString;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,12 +41,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.pentaho.di.core.exception.KettleValueException;
-import org.pentaho.di.core.row.RowMeta;
-import org.pentaho.di.core.row.value.ValueMetaString;
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 /**
  * Variables tests.
@@ -140,7 +141,7 @@ public class VariablesTest {
 
   @Test
   public void testFieldSubstitution() throws KettleValueException {
-    Object[] rowData = new Object[]{ "DataOne", "DataTwo" };
+    Object[] rowData = new Object[] { "DataOne", "DataTwo" };
     RowMeta rm = new RowMeta();
     rm.addValueMeta( new ValueMetaString( "FieldOne" ) );
     rm.addValueMeta( new ValueMetaString( "FieldTwo" ) );
@@ -163,8 +164,34 @@ public class VariablesTest {
     assertEquals( "DataTwo", vars.environmentSubstitute( "${VarTwo}" ) );
     assertEquals( "DataTwoEnd", vars.environmentSubstitute( "${VarTwo}End" ) );
 
-    assertEquals( 0, vars.environmentSubstitute( new String[0] ).length );
-    assertArrayEquals( new String[]{ "DataOne", "TheDataOne" },
-      vars.environmentSubstitute( new String[]{ "${VarOne}", "The${VarOne}" } ) );
+    assertEquals( 0, vars.environmentSubstitute( new String[ 0 ] ).length );
+    assertArrayEquals( new String[] { "DataOne", "TheDataOne" },
+      vars.environmentSubstitute( new String[] { "${VarOne}", "The${VarOne}" } ) );
+  }
+
+
+  @Test
+  public void serialization() throws Exception {
+    Variables vars = new Variables();
+    vars.setVariable( "VarOne", "DataOne" );
+    vars.setVariable( "VarTwo", "DataTwo" );
+    System.setProperty( "SysProp", "DataThree" );
+    vars.injectVariables( ImmutableMap.of( "Inject", "DataFour" ) );
+
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    ObjectOutputStream outputStream = new ObjectOutputStream( buffer );
+
+    outputStream.writeObject( vars );
+
+    ObjectInputStream inputStream = new ObjectInputStream( new ByteArrayInputStream( buffer.toByteArray() ) );
+
+    Variables readVars = (Variables) inputStream.readObject();
+
+    assertThat( readVars.getProperties(), allOf(
+      hasEntry( "VarOne", "DataOne" ),
+      hasEntry( "VarTwo", "DataTwo" ),
+      hasEntry( "SysProp", "DataThree" ),
+      hasEntry( "Inject", "DataFour" )
+    ) );
   }
 }

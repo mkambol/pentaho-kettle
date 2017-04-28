@@ -22,15 +22,20 @@
 
 package org.pentaho.di.core.variables;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import org.pentaho.di.core.Const;
-import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.core.util.StringUtil;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.version.BuildVersion;
 
-import java.util.Hashtable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,17 +45,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Sven Boden
  */
-public class Variables implements VariableSpace {
-  private Map<String, String> properties;
+public class Variables implements VariableSpace, Serializable {
+  private static final long serialVersionUID = -6310646484953719222L;
 
-  private VariableSpace parent;
+  private final ConcurrentHashMap<String, String> properties = new ConcurrentHashMap<>();
 
-  private Map<String, String> injection;
+  private transient VariableSpace parent;
+
+  private ImmutableMap<String, String> injection;
 
   private boolean initialized;
 
   public Variables() {
-    properties = new ConcurrentHashMap<>();
     parent = null;
     injection = null;
     initialized = false;
@@ -80,7 +86,7 @@ public class Variables implements VariableSpace {
       // the same object as the argument.
       String[] variableNames = space.listVariables();
       for ( int idx = 0; idx < variableNames.length; idx++ ) {
-        properties.put( variableNames[idx], space.getVariable( variableNames[idx] ) );
+        properties.put( variableNames[ idx ], space.getVariable( variableNames[ idx ] ) );
       }
     }
   }
@@ -144,7 +150,7 @@ public class Variables implements VariableSpace {
   @Override
   public String[] listVariables() {
     Set<String> keySet = properties.keySet();
-    return keySet.toArray( new String[0] );
+    return keySet.toArray( new String[ 0 ] );
   }
 
   @Override
@@ -170,16 +176,11 @@ public class Variables implements VariableSpace {
    * retrieved from the specified row. Please note that the getString() method is used to convert to a String, for all
    * values in the row.
    *
-   * @param aString
-   *          the string on which to apply the substitution.
-   * @param rowMeta
-   *          The row metadata to use.
-   * @param rowData
-   *          The row data to use
-   *
+   * @param aString the string on which to apply the substitution.
+   * @param rowMeta The row metadata to use.
+   * @param rowData The row data to use
    * @return the string with the substitution applied.
-   * @throws KettleValueException
-   *           In case there is a String conversion error
+   * @throws KettleValueException In case there is a String conversion error
    */
   @Override
   public String fieldSubstitute( String aString, RowMetaInterface rowMeta, Object[] rowData )
@@ -193,9 +194,9 @@ public class Variables implements VariableSpace {
 
   @Override
   public String[] environmentSubstitute( String[] string ) {
-    String[] retval = new String[string.length];
+    String[] retval = new String[ string.length ];
     for ( int i = 0; i < string.length; i++ ) {
-      retval[i] = environmentSubstitute( string[i] );
+      retval[ i ] = environmentSubstitute( string[ i ] );
     }
     return retval;
   }
@@ -222,13 +223,14 @@ public class Variables implements VariableSpace {
     } else {
       // We have our own personal copy, so changes afterwards
       // to the input properties don't affect us.
-      injection = new Hashtable<String, String>();
-      for ( String key : prop.keySet() ) {
-        String value = prop.get( key );
-        if ( !Utils.isEmpty( key ) ) {
-          injection.put( key, Const.NVL( value, "" ) );
-        }
-      }
+      injection = prop.entrySet().stream()
+        .map( entry -> ImmutableMap.of( entry.getKey(), Strings.nullToEmpty( entry.getValue() ) ) )
+        .collect(
+          ImmutableMap::<String, String>builder,
+          ImmutableMap.Builder::putAll,
+          ( left, right ) -> left.putAll( right.build() )
+        )
+        .build();
     }
   }
 
@@ -248,6 +250,20 @@ public class Variables implements VariableSpace {
   // Method is defined as package-protected in order to be accessible by unit tests
   Map<String, String> getProperties() {
     return properties;
+  }
+
+  // Serialization -- ensure initialized and set parent to null after read
+
+  private void writeObject( ObjectOutputStream out ) throws IOException {
+    if ( !initialized ) {
+      initializeVariablesFrom( null );
+    }
+    out.defaultWriteObject();
+  }
+
+  private void readObject( ObjectInputStream in ) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    setParentVariableSpace( null );
   }
 
 }
