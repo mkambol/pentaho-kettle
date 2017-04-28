@@ -24,9 +24,9 @@
 
 package org.pentaho.di.engine.api;
 
+import com.google.common.collect.ImmutableMap;
 import org.pentaho.di.engine.api.converter.RowConversionManager;
 import org.pentaho.di.engine.api.model.Transformation;
-import org.pentaho.di.engine.api.reporting.LogEntry;
 import org.pentaho.di.engine.api.reporting.LogLevel;
 import org.pentaho.di.engine.api.reporting.SubscriptionManager;
 
@@ -38,24 +38,63 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Created by nbaker on 5/31/16.
  */
-public interface ExecutionContext extends SubscriptionManager {
-  Map<String, Object> getParameters();
+public interface ExecutionContext extends SubscriptionManager, HasConfig {
 
-  Map<String, Object> getEnvironment();
+  /**
+   * @deprecated use {@link #getConfig()}
+   */
+  @Deprecated
+  default Map<String, Object> getParameters() {
+    return ImmutableMap.copyOf( getConfig() );
+  }
 
-  void setParameters( Map<String, Object> parameters );
+  /**
+   * @deprecated use {@link #getConfig()}
+   */
+  @Deprecated default Map<String, Object> getEnvironment() {
+    return ImmutableMap.copyOf( getConfig() );
+  }
 
-  void setEnvironment( Map<String, Object> environment );
+  /**
+   * @deprecated use {@link #setConfig(Map)}
+   */
+  @Deprecated
+  default void setParameters( Map<String, Object> parameters ) {
+    parameters.forEach( this::setParameter );
+  }
 
-  void setParameter( String key, Object value );
+  /**
+   * @deprecated use {@link #setConfig(Map)}
+   */
+  @Deprecated
+  default void setEnvironment( Map<String, Object> environment ) {
+    environment.forEach( this::setEnvironment );
+  }
 
-  void setEnvironment( String key, Object value );
+  /**
+   * @deprecated use {@link #setConfig(String, Serializable)}
+   */
+  @Deprecated
+  default void setParameter( String key, Object value ) {
+    setEnvironment( key, value );
+  }
+
+  /**
+   * @deprecated use {@link #setConfig(String, Serializable)}
+   */
+  @Deprecated default void setEnvironment( String key, Object value ) {
+    if ( value instanceof Serializable ) {
+      setConfig( key, (Serializable) value );
+    }
+  }
 
   Transformation getTransformation();
 
   CompletableFuture<ExecutionResult> execute();
 
-  RowConversionManager getConversionManager();
+  @Deprecated default RowConversionManager getConversionManager() {
+    return null;
+  }
 
   Principal getActingPrincipal();
 

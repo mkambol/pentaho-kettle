@@ -32,7 +32,7 @@ import java.util.Optional;
  * I can haz config?
  * Created by hudak on 1/17/17.
  */
-public interface HasConfig extends Serializable {
+public interface HasConfig {
   Map<String, Serializable> getConfig();
 
   void setConfig( String key, Serializable value );

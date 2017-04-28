@@ -25,6 +25,7 @@ package org.pentaho.di.engine.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.pentaho.di.engine.api.model.Configurable;
 import org.pentaho.di.engine.api.model.Hop;
 import org.pentaho.di.engine.api.model.Operation;
 

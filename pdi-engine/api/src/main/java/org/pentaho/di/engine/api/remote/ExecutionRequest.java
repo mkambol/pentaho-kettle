@@ -24,6 +24,9 @@
 
 package org.pentaho.di.engine.api.remote;
 
+import com.google.common.collect.ImmutableMap;
+import org.pentaho.di.engine.api.ExecutionContext;
+import org.pentaho.di.engine.api.model.Configurable;
 import org.pentaho.di.engine.api.model.Transformation;
 import org.pentaho.di.engine.api.reporting.LogEntry;
 import org.pentaho.di.engine.api.reporting.LogLevel;
@@ -32,42 +35,67 @@ import java.io.Serializable;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A request for execution by a remote Engine. All fields should be Serializable.
  * <p>
  * Created by hudak on 1/25/17.
  */
-public final class ExecutionRequest implements Serializable {
+public final class ExecutionRequest extends Configurable implements Serializable {
   private static final long serialVersionUID = -7835121168360407191L;
-  private final Map<String, Object> parameters;
-  private final Map<String, Object> environment;
   private final Transformation transformation;
   private final Map<String, Set<Class<? extends Serializable>>> reportingTopics;
-
-
   private final Principal actingPrincipal;
-  private LogLevel loggingLogLevel;
+  private final LogLevel loggingLogLevel;
 
+  @Deprecated
   public ExecutionRequest( Map<String, Object> parameters, Map<String, Object> environment,
                            Transformation transformation,
                            Map<String, Set<Class<? extends Serializable>>> reportingTopics,
                            LogLevel loggingLogLevel,
                            Principal actingPrincipal ) {
-    this.parameters = parameters;
-    this.environment = environment;
+    this( transformation, reportingTopics, actingPrincipal, loggingLogLevel );
+
+    // Copy environment and parameters into config
+    Stream.of( environment, parameters ).flatMap( map -> map.entrySet().stream() ).forEach( entry -> {
+      Object value = entry.getValue();
+      if ( value instanceof Serializable ) {
+        setConfig( entry.getKey(), (Serializable) value );
+      }
+    } );
+  }
+
+  public ExecutionRequest( ExecutionContext context, Map<String, Set<Class<? extends Serializable>>> reportingTopics ) {
+    this( context.getTransformation(), reportingTopics, context.getActingPrincipal(), context.getLoggingLogLevel() );
+
+    // Copy configuration
+    setConfig( context.getConfig() );
+  }
+
+  public ExecutionRequest( Transformation transformation,
+                           Map<String, Set<Class<? extends Serializable>>> reportingTopics,
+                           Principal actingPrincipal, LogLevel loggingLogLevel ) {
     this.transformation = transformation;
     this.reportingTopics = reportingTopics;
     this.loggingLogLevel = loggingLogLevel;
     this.actingPrincipal = actingPrincipal;
   }
 
+  /**
+   * @deprecated use {@link #getConfig()}
+   */
+  @Deprecated
   public Map<String, Object> getParameters() {
-    return parameters;
+    return ImmutableMap.copyOf( getConfig() );
   }
 
+  /**
+   * @deprecated use {@link #getConfig()}
+   */
+  @Deprecated
   public Map<String, Object> getEnvironment() {
-    return environment;
+    return ImmutableMap.copyOf( getConfig() );
   }
 
   public Transformation getTransformation() {

@@ -21,7 +21,7 @@
  *
  * *****************************************************************************
  */
-package org.pentaho.di.engine.model;
+package org.pentaho.di.engine.api.model;
 
 import com.google.common.collect.ImmutableMap;
 import org.pentaho.di.engine.api.HasConfig;
@@ -29,15 +29,15 @@ import org.pentaho.di.engine.api.HasConfig;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by hudak on 1/18/17.
  */
-abstract class Configurable implements HasConfig {
-  private static final long serialVersionUID = 5293701152182574661L;
+public abstract class Configurable implements HasConfig {
   private final HashMap<String, Serializable> config = new HashMap<>();
 
-  @Override  public Map<String, Serializable> getConfig() {
+  @Override public Map<String, Serializable> getConfig() {
     return ImmutableMap.copyOf( config );
   }
 
@@ -47,5 +47,13 @@ abstract class Configurable implements HasConfig {
 
   @Override public void setConfig( Map<String, Serializable> config ) {
     this.config.putAll( config );
+  }
+
+  @Override public Optional<? extends Serializable> getConfig( String key ) {
+    return Optional.ofNullable( config.get( key ) );
+  }
+
+  @Override public <T> Optional<T> getConfig( String key, Class<T> type ) {
+    return getConfig( key ).filter( type::isInstance ).map( type::cast );
   }
 }
