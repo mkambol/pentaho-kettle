@@ -26,6 +26,7 @@ package org.pentaho.di.trans.ael.adapters;
 
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
+import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.engine.api.Engine;
 import org.pentaho.di.engine.api.ExecutionContext;
 import org.pentaho.di.engine.api.ExecutionResult;
@@ -94,6 +95,13 @@ public class TransEngineAdapter extends Trans {
   }
 
   @Override public void prepareExecution( String[] arguments ) throws KettleException {
+    activateParameters();
+    transMeta.activateParameters();
+
+    Variables variables = new Variables();
+    variables.initializeVariablesFrom( this );
+    executionContext.setConfig( Variables.class.getName(), variables );
+
     setSteps( new ArrayList<>( opsToSteps() ) );
     wireStatusToTransListeners();
 
