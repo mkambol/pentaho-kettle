@@ -24,6 +24,8 @@
 
 package org.pentaho.di.trans.ael.adapters;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.collections.keyvalue.UnmodifiableMapEntry;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.variables.Variables;
@@ -46,8 +48,10 @@ import org.pentaho.di.trans.step.StepMetaDataCombi;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.io.Serializable;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -100,7 +104,10 @@ public class TransEngineAdapter extends Trans {
 
     Variables variables = new Variables();
     variables.initializeVariablesFrom( this );
-    executionContext.setConfig( Variables.class.getName(), variables );
+
+    Map<String, Serializable> variableMap = Arrays.stream( variables.listVariables() )
+      .collect( Collectors.toMap( Function.identity(), variables::getVariable ) );
+    executionContext.setConfig( Variables.class.getName(), ImmutableMap.copyOf( variableMap ) );
 
     setSteps( new ArrayList<>( opsToSteps() ) );
     wireStatusToTransListeners();
