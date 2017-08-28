@@ -59,7 +59,7 @@ public class RunConfigurationRunExtensionPoint implements ExtensionPointInterfac
     AbstractMeta meta = (AbstractMeta) ( (Object[]) o )[ 1 ];
     VariableSpace variableSpace = (VariableSpace) ( (Object[]) o )[ 2 ];
     EmbeddedMetaStore embeddedMetaStore = meta.getEmbeddedMetaStore();
-
+    java.util.Arrays.stream( ( new int[] ) )
     RunConfiguration runConfiguration =
       runConfigurationManager.load( transExecutionConfiguration.getRunConfiguration() );
 
