@@ -22,17 +22,13 @@
 
 package org.pentaho.di.ui.trans.steps;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.vfs2.FileObject;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Image;
@@ -41,14 +37,9 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.ObjectLocationSpecificationMethod;
@@ -68,68 +59,47 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.BaseStreamingMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
-import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.ui.core.ConstUI;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.gui.GUIResource;
-import org.pentaho.di.ui.core.widget.ColumnInfo;
-import org.pentaho.di.ui.core.widget.ComboVar;
-import org.pentaho.di.ui.core.widget.TableView;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.repository.dialog.SelectObjectDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 import org.pentaho.di.ui.util.DialogUtils;
-import org.pentaho.metastore.api.exceptions.MetaStoreException;
 import org.pentaho.vfs.ui.VfsFileChooserDialog;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
-import static org.pentaho.big.data.kettle.plugins.kafka.KafkaConsumerInputMeta.ConnectionType.CLUSTER;
-import static org.pentaho.big.data.kettle.plugins.kafka.KafkaConsumerInputMeta.ConnectionType.DIRECT;
-
-@SuppressWarnings( { "FieldCanBeLocal", "unused" } )
+@SuppressWarnings( { "FieldCanBeLocal", "unused", "WeakerAccess" } )
 public abstract class BaseStreamingDialog extends BaseStepDialog implements StepDialogInterface {
 
   public static final int INPUT_WIDTH = 350;
   private static Class<?> PKG = BaseStreamingDialog.class;
   // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
 
-//  private static final Map<String, String> DEFAULT_OPTION_VALUES = ImmutableMap.of( ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest" );
+  protected BaseStreamingMeta meta;
+  protected TransMeta executorTransMeta = null;
 
-  private BaseStepMeta meta;
-  private TransMeta executorTransMeta = null;
+  protected Label wlTransPath;
+  protected TextVar wTransPath;
+  protected Button wbBrowseTrans;
 
-  private Label wlTransPath;
-  private TextVar wTransPath;
-  private Button wbBrowseTrans;
+  protected ObjectId referenceObjectId;
+  protected ObjectLocationSpecificationMethod specificationMethod;
 
-  private ObjectId referenceObjectId;
-  private ObjectLocationSpecificationMethod specificationMethod;
+  protected ModifyListener lsMod;
+  protected Label wlBatchSize;
+  protected TextVar wBatchSize;
+  protected Label wlBatchDuration;
+  protected TextVar wBatchDuration;
 
-  private ModifyListener lsMod;
-  private TableView fieldsTable;
-  private TableView optionsTable;
-  private Label wlBatchSize;
-  private TextVar wBatchSize;
-  private Label wlBatchDuration;
-  private TextVar wBatchDuration;
+  protected CTabFolder wTabFolder;
+  protected CTabItem wSetupTab;
+  protected CTabItem wBatchTab;
 
-  private CTabFolder wTabFolder;
-  private CTabItem wSetupTab;
-  private CTabItem wBatchTab;
-  private CTabItem wFieldsTab;
-  private CTabItem wOptionsTab;
-
-  private Composite wSetupComp;
-  private Composite wFieldsComp;
-  private Composite wBatchComp;
-  private Composite wOptionsComp;
+  protected Composite wSetupComp;
+  protected Composite wBatchComp;
 
   public BaseStreamingDialog( Shell parent, Object in, TransMeta tr, String sname ) {
     super( parent, (BaseStepMeta) in, tr, sname );
@@ -265,8 +235,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
     buildSetupTab();
     buildBatchTab();
-    buildFieldsTab();
-    buildOptionsTab();
+    createAdditionalTabs();
 
     lsCancel = e -> cancel();
     lsOK = e -> ok();
@@ -288,7 +257,6 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     } );
 
     getData();
-
     setSize();
 
     wTabFolder.setSelection( 0 );
@@ -327,11 +295,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
   abstract void buildSetup( Composite wSetupComp );
 
-  public void toggleVisibility( final boolean isDirect ) {
-    wlBootstrapServers.setVisible( isDirect );
-    wBootstrapServers.setVisible( isDirect );
-    wlClusterName.setVisible( !isDirect );
-    wClusterName.setVisible( !isDirect );
+  protected void createAdditionalTabs() {
   }
 
   private void buildBatchTab() {
@@ -392,224 +356,6 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     wBatchTab.setControl( wBatchComp );
   }
 
-  private void buildFieldsTab() {
-    wFieldsTab = new CTabItem( wTabFolder, SWT.NONE );
-    wFieldsTab.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.FieldsTab" ) );
-
-    wFieldsComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wFieldsComp );
-    FormLayout fieldsLayout = new FormLayout();
-    fieldsLayout.marginHeight = 15;
-    fieldsLayout.marginWidth = 15;
-    wFieldsComp.setLayout( fieldsLayout );
-
-    FormData fieldsFormData = new FormData();
-    fieldsFormData.left = new FormAttachment( 0, 0 );
-    fieldsFormData.top = new FormAttachment( wFieldsComp, 0 );
-    fieldsFormData.right = new FormAttachment( 100, 0 );
-    fieldsFormData.bottom = new FormAttachment( 100, 0 );
-    wFieldsComp.setLayoutData( fieldsFormData );
-
-    buildFieldTable( wFieldsComp, wFieldsComp );
-
-    wFieldsComp.layout();
-    wFieldsTab.setControl( wFieldsComp );
-  }
-
-  private void buildOptionsTab() {
-    wOptionsTab = new CTabItem( wTabFolder, SWT.NONE );
-    wOptionsTab.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.OptionsTab" ) );
-
-    wOptionsComp = new Composite( wTabFolder, SWT.NONE );
-    props.setLook( wOptionsComp );
-    FormLayout fieldsLayout = new FormLayout();
-    fieldsLayout.marginHeight = 15;
-    fieldsLayout.marginWidth = 15;
-    wOptionsComp.setLayout( fieldsLayout );
-
-    Label optionsLabel = new Label( wOptionsComp, SWT.LEFT );
-    props.setLook( optionsLabel );
-    optionsLabel.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.OptionsLabel" ) );
-    FormData fdlOptions = new FormData();
-    fdlOptions.left = new FormAttachment( 0, 0 );
-    fdlOptions.top = new FormAttachment( 0, 0 );
-    fdlOptions.right = new FormAttachment( 50, 0 );
-    optionsLabel.setLayoutData( fdlOptions );
-
-    FormData optionsFormData = new FormData();
-    optionsFormData.left = new FormAttachment( 0, 0 );
-    optionsFormData.top = new FormAttachment( wOptionsComp, 0 );
-    optionsFormData.right = new FormAttachment( 100, 0 );
-    optionsFormData.bottom = new FormAttachment( 100, 0 );
-    wOptionsComp.setLayoutData( optionsFormData );
-
-    buildOptionsTable( wOptionsComp, optionsLabel );
-
-    wOptionsComp.layout();
-    wOptionsTab.setControl( wOptionsComp );
-  }
-
-  private void buildFieldTable( Composite parentWidget, Control relativePosition ) {
-    ColumnInfo[] columns = getFieldColumns();
-
-    int fieldCount = KafkaConsumerField.Name.values().length;
-
-    fieldsTable = new TableView(
-      transMeta,
-      parentWidget,
-      SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI,
-      columns,
-      fieldCount,
-      true,
-      lsMod,
-      props,
-      false
-    );
-
-    fieldsTable.setSortable( false );
-    fieldsTable.getTable().addListener( SWT.Resize, event -> {
-      Table table = (Table) event.widget;
-      table.getColumn( 1 ).setWidth( 147 );
-      table.getColumn( 2 ).setWidth( 147 );
-      table.getColumn( 3 ).setWidth( 147 );
-    } );
-
-    populateFieldData();
-
-    FormData fdData = new FormData();
-    fdData.left = new FormAttachment( 0, 0 );
-    fdData.top = new FormAttachment( relativePosition, 5 );
-    fdData.right = new FormAttachment( 100, 0 );
-
-    // resize the columns to fit the data in them
-    Arrays.stream( fieldsTable.getTable().getColumns() ).forEach( column -> {
-      if ( column.getWidth() > 0 ) {
-        // don't pack anything with a 0 width, it will resize it to make it visible (like the index column)
-        column.setWidth( 120 );
-      }
-    } );
-
-    // don't let any rows get deleted or added (this does not affect the read-only state of the cells)
-    fieldsTable.setReadonly( true );
-    fieldsTable.setLayoutData( fdData );
-  }
-
-  private void buildOptionsTable( Composite parentWidget, Control relativePosition ) {
-    ColumnInfo[] columns = getOptionsColumns();
-
-    if ( meta.getConfig().size() == 0 ) {
-      // inital call
-      List<String> list = KafkaDialogHelper.getConsumerAdvancedConfigOptionNames();
-      Map<String, String> advancedConfig = new LinkedHashMap<>();
-      for ( String item : list ) {
-        advancedConfig.put( item, DEFAULT_OPTION_VALUES.getOrDefault( item, "" ) );
-      }
-      meta.setConfig( advancedConfig );
-    }
-    int fieldCount = meta.getConfig().size();
-
-    optionsTable = new TableView(
-      transMeta,
-      parentWidget,
-      SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI,
-      columns,
-      fieldCount,
-      false,
-      lsMod,
-      props,
-      false
-    );
-
-    optionsTable.setSortable( false );
-    optionsTable.getTable().addListener( SWT.Resize, event -> {
-      Table table = (Table) event.widget;
-      table.getColumn( 1 ).setWidth( 220 );
-      table.getColumn( 2 ).setWidth( 220 );
-    } );
-
-    populateOptionsData();
-
-    FormData fdData = new FormData();
-    fdData.left = new FormAttachment( 0, 0 );
-    fdData.top = new FormAttachment( relativePosition, 5 );
-    fdData.right = new FormAttachment( 100, 0 );
-    fdData.bottom = new FormAttachment( 100, 0 );
-
-    // resize the columns to fit the data in them
-    Arrays.stream( optionsTable.getTable().getColumns() ).forEach( column -> {
-      if ( column.getWidth() > 0 ) {
-        // don't pack anything with a 0 width, it will resize it to make it visible (like the index column)
-        column.setWidth( 120 );
-      }
-    } );
-
-    optionsTable.setLayoutData( fdData );
-  }
-
-  private ColumnInfo[] getFieldColumns() {
-    KafkaConsumerField.Type[] values = KafkaConsumerField.Type.values();
-    String[] supportedTypes = Arrays.stream( values ).map( v -> v.toString() ).toArray( String[]::new );
-
-    ColumnInfo referenceName = new ColumnInfo( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Column.Ref" ),
-      ColumnInfo.COLUMN_TYPE_TEXT, false, true );
-
-    ColumnInfo name = new ColumnInfo( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Column.Name" ),
-      ColumnInfo.COLUMN_TYPE_TEXT, false, false );
-
-    ColumnInfo type = new ColumnInfo( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Column.Type" ),
-      ColumnInfo.COLUMN_TYPE_CCOMBO, supportedTypes, false );
-
-    // don't let the user edit the type for anything other than key & msg fields
-    type.setDisabledListener( rowNumber -> {
-      String ref = fieldsTable.getTable().getItem( rowNumber ).getText( 1 );
-      KafkaConsumerField.Name refName = KafkaConsumerField.Name.valueOf( ref.toUpperCase() );
-
-      return !( refName == KafkaConsumerField.Name.KEY || refName == KafkaConsumerField.Name.MESSAGE );
-    } );
-
-    return new ColumnInfo[]{ referenceName, name, type };
-  }
-
-  private ColumnInfo[] getOptionsColumns() {
-
-    ColumnInfo optionName = new ColumnInfo( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.NameField" ),
-      ColumnInfo.COLUMN_TYPE_TEXT, false, false );
-
-    ColumnInfo value = new ColumnInfo( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Column.Value" ),
-      ColumnInfo.COLUMN_TYPE_TEXT, false, false );
-    value.setUsingVariables( true );
-
-    return new ColumnInfo[]{ optionName, value };
-  }
-
-  private void populateFieldData() {
-    List<KafkaConsumerField> fieldDefinitions = meta.getFieldDefinitions();
-    int rowIndex = 0;
-    for ( KafkaConsumerField field : fieldDefinitions ) {
-      TableItem key = fieldsTable.getTable().getItem( rowIndex++ );
-
-      if ( field.getKafkaName() != null ) {
-        key.setText( 1, field.getKafkaName().toString() );
-      }
-
-      if ( field.getOutputName() != null ) {
-        key.setText( 2, field.getOutputName() );
-      }
-
-      if ( field.getOutputType() != null ) {
-        key.setText( 3, field.getOutputType().toString() );
-      }
-    }
-  }
-
-  private void populateOptionsData() {
-    int rowIndex = 0;
-    for ( Map.Entry<String, String> entry : meta.getConfig().entrySet() ) {
-      TableItem key = optionsTable.getTable().getItem( rowIndex++ );
-      key.setText( 1, entry.getKey() );
-      key.setText( 2, entry.getValue() );
-    }
-  }
 
   abstract void getData();
 
@@ -632,20 +378,8 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
   private void ok() {
     stepname = wStepname.getText();
     meta.setTransformationPath( wTransPath.getText() );
-    meta.setClusterName( wClusterName.getText() );
-
-    setTopicsFromTable();
-
-    meta.setConsumerGroup( wConsumerGroup.getText() );
     meta.setBatchSize( wBatchSize.getText() );
     meta.setBatchDuration( wBatchDuration.getText() );
-    meta.setConnectionType( wbDirect.getSelection() ? DIRECT : CLUSTER );
-    meta.setDirectBootstrapServers( wBootstrapServers.getText() );
-
-    setFieldsFromTable();
-
-    setOptionsFromTable();
-
     meta.setSpecificationMethod( specificationMethod );
     switch ( specificationMethod ) {
       case FILENAME:
@@ -673,46 +407,6 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     }
 
     dispose();
-  }
-
-  private void setFieldsFromTable() {
-    int itemCount = fieldsTable.getItemCount();
-    for ( int rowIndex = 0; rowIndex < itemCount; rowIndex++ ) {
-      TableItem row = fieldsTable.getTable().getItem( rowIndex );
-      String kafkaName = row.getText( 1 );
-      String outputName = row.getText( 2 );
-      String outputType = row.getText( 3 );
-      try {
-        KafkaConsumerField.Name ref = KafkaConsumerField.Name.valueOf( kafkaName.toUpperCase() );
-        KafkaConsumerField field = new KafkaConsumerField(
-          ref,
-          outputName,
-          KafkaConsumerField.Type.valueOf( outputType )
-        );
-        meta.setField( field );
-      } catch ( IllegalArgumentException e ) {
-        if ( isDebug() ) {
-          logDebug( e.getMessage(), e );
-        }
-      }
-    }
-  }
-
-  private void setTopicsFromTable() {
-    int itemCount = topicsTable.getItemCount();
-    ArrayList<String> tableTopics = new ArrayList<String>();
-    for ( int rowIndex = 0; rowIndex < itemCount; rowIndex++ ) {
-      TableItem row = topicsTable.getTable().getItem( rowIndex );
-      String topic = row.getText( 1 );
-      if ( !"".equals( topic ) && tableTopics.indexOf( topic ) == -1 ) {
-        tableTopics.add( topic );
-      }
-    }
-    meta.setTopics( tableTopics );
-  }
-
-  private void setOptionsFromTable() {
-    meta.setConfig( KafkaDialogHelper.getConfig( optionsTable ) );
   }
 
   private void selectRepositoryTrans() {
