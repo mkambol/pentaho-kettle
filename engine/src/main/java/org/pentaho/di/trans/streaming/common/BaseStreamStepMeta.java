@@ -28,7 +28,6 @@ import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.trans.StepWithMappingMeta;
-import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
@@ -56,17 +55,7 @@ public abstract class BaseStreamStepMeta extends StepWithMappingMeta implements 
   @Injection ( name = "DURATION" )
   private String batchDuration;
 
-  public void setTransformationPath( String transformationPath ) {
-    this.transformationPath = transformationPath;
-  }
 
-  public void setBatchSize( String batchSize ) {
-    this.batchSize = batchSize;
-  }
-
-  public void setBatchDuration( String batchDuration ) {
-    this.batchDuration = batchDuration;
-  }
 
 
   @Override public String getXML() {
@@ -116,6 +105,19 @@ public abstract class BaseStreamStepMeta extends StepWithMappingMeta implements 
       //throw new RuntimeException( e );
     }
     return "";
+  }
+
+
+  public void setTransformationPath( String transformationPath ) {
+    this.transformationPath = transformationPath;
+  }
+
+  public void setBatchSize( String batchSize ) {
+    this.batchSize = batchSize;
+  }
+
+  public void setBatchDuration( String batchDuration ) {
+    this.batchDuration = batchDuration;
   }
 
   @Override public void setDefault() {

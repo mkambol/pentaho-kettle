@@ -43,17 +43,12 @@ import java.util.List;
 
 public class BaseStreamStep<I> extends BaseStep {
 
-  private final StreamWindow<I, Result> window;
-  private final StreamSource<I> source;
+  protected StreamWindow<I, Result> window;
+  protected StreamSource<I> source;
 
-  public BaseStreamStep( StepMeta stepMeta,
-                         StepDataInterface stepDataInterface, int copyNr,
-                         TransMeta transMeta, Trans trans,
-                         StreamWindow<I, Result> window,
-                         StreamSource<I> source ) {
+  public BaseStreamStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr,
+                         TransMeta transMeta, Trans trans ) {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
-    this.window = window;
-    this.source = source;
   }
 
 

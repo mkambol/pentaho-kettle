@@ -19,7 +19,12 @@
 package org.pentaho.di.trans.step.filestream;
 
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.exception.KettleMissingPluginsException;
+import org.pentaho.di.core.exception.KettleXMLException;
+import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.i18n.BaseMessages;
+import org.pentaho.di.trans.SubtransExecutor;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStep;
@@ -27,45 +32,67 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
+import org.pentaho.di.trans.steps.transexecutor.TransExecutorData;
+import org.pentaho.di.trans.steps.transexecutor.TransExecutorParameters;
+import org.pentaho.di.trans.streaming.common.BaseStreamStep;
+import org.pentaho.di.trans.streaming.common.FixedTimeStreamWindow;
+
+import java.io.FileNotFoundException;
+import java.util.List;
 
 /**
  * Describe your step plugin.
  */
-public class FileStream extends BaseStep implements StepInterface {
+public class FileStream extends BaseStreamStep<List<String>> implements StepInterface {
 
   private static Class<?> PKG = FileStreamMeta.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
+  private FileStreamMeta fileStreamMeta;
 
   public FileStream( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
                      Trans trans ) {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
-  /**
-   * Initialize and do work where other steps need to wait for...
-   *
-   * @param stepMetaInterface The metadata to work with
-   * @param stepDataInterface The data to initialize
-   */
   public boolean init( StepMetaInterface stepMetaInterface, StepDataInterface stepDataInterface ) {
+    fileStreamMeta = (FileStreamMeta) stepMetaInterface;
+
+    SubtransExecutor subtransExecutor = null;
+    try {
+      subtransExecutor = new SubtransExecutor(
+        getTrans(), new TransMeta( fileStreamMeta.getTransformationPath() ), true,
+        new TransExecutorData(), new TransExecutorParameters() );
+    } catch ( KettleXMLException | KettleMissingPluginsException e ) {
+      e.printStackTrace();
+    }
+    RowMeta rowMeta = new RowMeta();
+    rowMeta.addValueMeta( new ValueMetaString( "foo" ) );
+
+    window = new FixedTimeStreamWindow<>( subtransExecutor, rowMeta, 1000, 5 );
+    try {
+      source = new TailFileStreamSource( fileStreamMeta.getSourcePath() );
+    } catch ( FileNotFoundException e ) {
+      // TODO log, error
+      e.printStackTrace();
+    }
     return super.init( stepMetaInterface, stepDataInterface );
   }
 
-  public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
-    Object[] r = getRow(); // get row, set busy!
-    if ( r == null ) {
-      // no more input to be expected...
-      setOutputDone();
-      return false;
-    }
-
-    putRow( getInputRowMeta(), r ); // copy row to possible alternate rowset(s).
-
-    if ( checkFeedback( getLinesRead() ) ) {
-      if ( log.isBasic() ) {
-        logBasic( BaseMessages.getString( PKG, "FileStream.Log.LineNumber" ) + getLinesRead() );
-      }
-    }
-
-    return true;
-  }
+//  public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
+//    Object[] r = getRow(); // get row, set busy!
+//    if ( r == null ) {
+//      // no more input to be expected...
+//      setOutputDone();
+//      return false;
+//    }
+//
+//    putRow( getInputRowMeta(), r ); // copy row to possible alternate rowset(s).
+//
+//    if ( checkFeedback( getLinesRead() ) ) {
+//      if ( log.isBasic() ) {
+//        logBasic( BaseMessages.getString( PKG, "FileStream.Log.LineNumber" ) + getLinesRead() );
+//      }
+//    }
+//
+//    return true;
+//  }
 }
