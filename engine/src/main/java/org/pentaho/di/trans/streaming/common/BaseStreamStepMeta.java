@@ -27,6 +27,7 @@ import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.trans.StepWithMappingMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.metastore.api.IMetaStore;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Maps.immutableEntry;
 
 @InjectionSupported ( localizationPrefix = "StreamingFileInput.Injection." )
-public abstract class BaseStreamStepMeta extends BaseStepMeta implements StepMetaInterface {
+public abstract class BaseStreamStepMeta extends StepWithMappingMeta implements StepMetaInterface {
 
 
   @Injection ( name = "TRANSFORMATION_PATH" )  // pull this stuff up to common
@@ -120,5 +121,17 @@ public abstract class BaseStreamStepMeta extends BaseStepMeta implements StepMet
   @Override public void setDefault() {
     batchSize = "1000";
     batchDuration = "1000";
+  }
+
+  public String getTransformationPath() {
+    return transformationPath;
+  }
+
+  public String getBatchSize() {
+    return batchSize;
+  }
+
+  public String getBatchDuration() {
+    return batchDuration;
   }
 }
