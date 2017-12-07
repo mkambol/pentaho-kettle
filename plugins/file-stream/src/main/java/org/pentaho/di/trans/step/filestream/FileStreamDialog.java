@@ -40,7 +40,6 @@ public class FileStreamDialog extends BaseStreamingDialog implements StepDialogI
   private static Class<?> PKG = FileStreamMeta.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
 
   private FileStreamMeta meta;
-  private ModifyListener lsMod;
 
   protected Label wlSourcePath;
   protected TextVar wSourcePath;

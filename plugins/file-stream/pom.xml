@@ -25,12 +25,11 @@
   <parent>
     <groupId>org.pentaho</groupId>
     <artifactId>pentaho-ce-bundle-parent-pom</artifactId>
-    <version>RELEASE</version>
+    <version>8.1.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.pentaho</groupId>
   <artifactId>file-stream</artifactId>
-  <version>8.1-SNAPSHOT</version>
+  <version>8.1.0.0-SNAPSHOT</version>
   <packaging>bundle</packaging>
 
   <name>file-stream Bundle</name>
@@ -54,13 +53,11 @@
   </repositories>
 
   <properties>
-    <dependency.pentaho-kettle.kettle-core.version>8.1-SNAPSHOT</dependency.pentaho-kettle.kettle-core.version>
-    <dependency.pentaho-metaverse-api>8.1-SNAPSHOT</dependency.pentaho-metaverse-api>
-    <dependency.maven-bundle-plugin.version>2.4.0</dependency.maven-bundle-plugin.version>
+    <pdi.version>8.1.0.0-SNAPSHOT</pdi.version>
+    <pentaho-metaverse.version>8.1-SNAPSHOT</pentaho-metaverse.version>
     <!-- Plugin dependencies -->
     <target.jdk.version>1.8</target.jdk.version>
-    <plugin.maven-bundle-plugin.version>2.3.7</plugin.maven-bundle-plugin.version>
-    <plugin.maven-compiler-plugin.version>3.1</plugin.maven-compiler-plugin.version>
+    <maven-bundle-plugin.version>2.4.0</maven-bundle-plugin.version>
     <mockito.version>1.9.5</mockito.version>
     <junit.version>4.4</junit.version>
     <guava.version>17.0</guava.version>
@@ -70,23 +67,17 @@
     <dependency>
       <groupId>pentaho-kettle</groupId>
       <artifactId>kettle-core</artifactId>
-      <version>${dependency.pentaho-kettle.kettle-core.version}</version>
+      <version>${pdi.version}</version>
     </dependency>
     <dependency>
       <groupId>pentaho-kettle</groupId>
       <artifactId>kettle-engine</artifactId>
-      <version>${dependency.pentaho-kettle.kettle-core.version}</version>
+      <version>${pdi.version}</version>
     </dependency>
     <dependency>
       <groupId>pentaho-kettle</groupId>
       <artifactId>kettle-ui-swt</artifactId>
-      <version>${dependency.pentaho-kettle.kettle-core.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
-      <version>4.2.0</version>
-      <scope>provided</scope>
+      <version>${pdi.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -97,20 +88,9 @@
     <dependency>
       <groupId>pentaho</groupId>
       <artifactId>pentaho-metaverse-api</artifactId>
-      <version>${dependency.pentaho-metaverse-api}</version>
+      <version>${pentaho-metaverse.version}</version>
       <type>bundle</type>
     </dependency>
-    <dependency>
-      <groupId>pentaho-kettle</groupId>
-      <artifactId>kettle-engine</artifactId>
-      <version>8.1.0.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>pentaho-kettle</groupId>
-      <artifactId>kettle-ui-swt</artifactId>
-      <version>8.1.0.0-SNAPSHOT</version>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -118,13 +98,13 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>${dependency.maven-bundle-plugin.version}</version>
+        <version>${maven-bundle-plugin.version}</version>
         <extensions>true</extensions>
         <configuration>
           <instructions>
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Bundle-Version>${project.version}</Bundle-Version>
-            <Export-Package>org.pentaho.*;version=${project.version}</Export-Package>
+            <Export-Package>org.pentaho.di.trans.step.filestream.*;version=${project.version}</Export-Package>
             <!--<Import-Package>org.pentaho.di.osgi,-->
               <!--*-->
             <!--</Import-Package>-->
@@ -133,34 +113,6 @@
             </Import-Package>
           </instructions>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${plugin.maven-compiler-plugin.version}</version>
-        <configuration>
-          <source>${target.jdk.version}</source>
-          <target>${target.jdk.version}</target>
-
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.karaf.tooling</groupId>
-        <artifactId>features-maven-plugin</artifactId>
-        <version>2.3.7</version>
-        <executions>
-          <execution>
-            <id>create-kar</id>
-            <goals>
-              <goal>create-kar</goal>
-            </goals>
-            <configuration>
-              <featuresFile>src/main/resources/file-stream-feature.xml</featuresFile>
-            </configuration>
-
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
