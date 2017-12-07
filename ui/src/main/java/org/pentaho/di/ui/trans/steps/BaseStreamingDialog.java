@@ -293,7 +293,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     wSetupTab.setControl( wSetupComp );
   }
 
-  abstract void buildSetup( Composite wSetupComp );
+  abstract protected void buildSetup( Composite wSetupComp );
 
   protected void createAdditionalTabs() {
   }
@@ -357,7 +357,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
   }
 
 
-  abstract void getData();
+  abstract protected void getData();
 
   private Image getImage() {
     PluginInterface plugin =

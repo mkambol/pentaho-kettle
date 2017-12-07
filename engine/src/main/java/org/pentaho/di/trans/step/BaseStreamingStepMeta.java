@@ -116,7 +116,7 @@ public abstract class BaseStreamingStepMeta extends StepWithMappingMeta implemen
     } catch ( NumberFormatException e ) {
       remarks.add( new CheckResult(
         CheckResultInterface.TYPE_RESULT_ERROR,
-        BaseMessages.getString( PKG, "KafkaConsumerInputMeta.CheckResult.NaN", "Duration" ),
+        BaseMessages.getString( PKG, "BaseStreamingStepMeta.CheckResult.NaN", "Duration" ),
         stepMeta ) );
     }
 
@@ -126,14 +126,14 @@ public abstract class BaseStreamingStepMeta extends StepWithMappingMeta implemen
     } catch ( NumberFormatException e ) {
       remarks.add( new CheckResult(
         CheckResultInterface.TYPE_RESULT_ERROR,
-        BaseMessages.getString( PKG, "KafkaConsumerInputMeta.CheckResult.NaN", "Number of records" ),
+        BaseMessages.getString( PKG, "BaseStreamingStepMeta.CheckResult.NaN", "Number of records" ),
         stepMeta ) );
     }
 
     if ( duration == 0 && size == 0 ) {
       remarks.add( new CheckResult(
         CheckResultInterface.TYPE_RESULT_ERROR,
-        BaseMessages.getString( PKG, "KafkaConsumerInputMeta.CheckResult.NoBatchDefined" ),
+        BaseMessages.getString( PKG, "BaseStreamingStepMeta.CheckResult.NoBatchDefined" ),
         stepMeta ) );
     }
   }
