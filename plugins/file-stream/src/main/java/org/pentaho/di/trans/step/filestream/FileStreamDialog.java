@@ -19,7 +19,6 @@
 package org.pentaho.di.trans.step.filestream;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FormAttachment;
@@ -32,8 +31,9 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
+import org.pentaho.di.trans.streaming.common.BaseStreamStepMeta;
 import org.pentaho.di.ui.core.widget.TextVar;
-import org.pentaho.di.ui.trans.steps.BaseStreamingDialog;
+import org.pentaho.di.ui.trans.step.BaseStreamingDialog;
 
 public class FileStreamDialog extends BaseStreamingDialog implements StepDialogInterface {
 
@@ -53,7 +53,7 @@ public class FileStreamDialog extends BaseStreamingDialog implements StepDialogI
   @Override protected void buildSetup( Composite wSetupComp ) {
     wlSourcePath = new Label( wSetupComp, SWT.LEFT );
     props.setLook( wlSourcePath );
-    wlSourcePath.setText( BaseMessages.getString( PKG, "FileStreamDialog.Transformation" ) );
+    wlSourcePath.setText( BaseMessages.getString( PKG, "FileStreamDialog.SourcePath" ) );
     FormData fdlTransPath = new FormData();
     fdlTransPath.left = new FormAttachment( 0, 0 );
     fdlTransPath.top = new FormAttachment( 0, 0 );
@@ -71,7 +71,7 @@ public class FileStreamDialog extends BaseStreamingDialog implements StepDialogI
 
     wbBrowseSource = new Button( wSetupComp, SWT.PUSH );
     props.setLook( wbBrowseSource );
-    wbBrowseSource.setText( BaseMessages.getString( PKG, "FileStreamDialog.Transformation.Browse" ) );
+    wbBrowseSource.setText( BaseMessages.getString( PKG, "FileStreamDialog.SourcePath.Browse" ) );
     FormData fdBrowseTrans = new FormData();
     fdBrowseTrans.left = new FormAttachment( wSourcePath, 5 );
     fdBrowseTrans.top = new FormAttachment( wlSourcePath, 5 );
@@ -79,9 +79,17 @@ public class FileStreamDialog extends BaseStreamingDialog implements StepDialogI
 
     wbBrowseSource.addSelectionListener( new SelectionAdapter() {
       public void widgetSelected( SelectionEvent e ) {
-        selectFileTrans( wSourcePath, new String[]{"*"} );
+        selectFile( wSourcePath, new String[]{"*"} );
       }
     } );
+  }
+
+  @Override protected void additionalOks( BaseStreamStepMeta meta ) {
+    ( (FileStreamMeta) meta ).setSourcePath( wSourcePath.getText() );
+  }
+
+  @Override protected void createAdditionalTabs() {
+    shell.setText( BaseMessages.getString( PKG, "FileStreamDialog.Shell.Title" ) );
   }
 
   @Override protected void getData() {

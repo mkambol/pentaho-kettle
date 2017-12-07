@@ -22,6 +22,7 @@ import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
+import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
@@ -46,26 +47,19 @@ import java.util.List;
 public class FileStreamMeta extends BaseStreamStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = FileStream.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
-  private String sourcePath;
   public static final String SOURCE_PATH = "sourcePath";
 
-  public FileStreamMeta() {
-    super(); // allocate BaseStepMeta
-  }
+  @Injection( name = SOURCE_PATH )
+  public String sourcePath;
 
-//  public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
-//    readData( stepnode );
-//  }
+  public FileStreamMeta() {
+    super();
+  }
 
   public Object clone() {
     Object retval = super.clone();
     return retval;
   }
-
-//  @Override protected void readData( Node stepnode ) {
-//    super.readData( stepnode );
-//    setSourcePath( XMLHandler.getTagValue( stepnode, SOURCE_PATH ) );
-//  }
 
   public void setDefault() {
   }

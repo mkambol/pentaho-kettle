@@ -47,16 +47,13 @@ public abstract class BaseStreamStepMeta extends StepWithMappingMeta implements 
 
 
   @Injection ( name = "TRANSFORMATION_PATH" )  // pull this stuff up to common
-  private String transformationPath;
+  protected String transformationPath;
 
   @Injection ( name = "NUM_MESSAGES" )
-  private String batchSize;
+  protected String batchSize;
 
   @Injection ( name = "DURATION" )
-  private String batchDuration;
-
-
-
+  protected String batchDuration;
 
   @Override public String getXML() {
     StringBuilder builder = new StringBuilder();
@@ -85,7 +82,7 @@ public abstract class BaseStreamStepMeta extends StepWithMappingMeta implements 
   }
 
   private Stream<Map.Entry<Field, String>> getFieldToNameStream() {
-    return Arrays.stream( getClass().getDeclaredFields() )
+    return Stream.concat( Arrays.stream( getClass().getDeclaredFields() ), Arrays.stream( getClass().getSuperclass().getDeclaredFields() ) )
       // get this class' fields, map them to injection annotations.
       .collect( Collectors.toMap( Function.identity(), field -> field.getAnnotationsByType( Injection.class ) ) )
       .entrySet().stream()

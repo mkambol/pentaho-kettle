@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.di.ui.trans.steps;
+package org.pentaho.di.ui.trans.step;
 
 import org.apache.commons.vfs2.FileObject;
 import org.eclipse.swt.SWT;
@@ -65,11 +65,11 @@ import org.pentaho.di.ui.core.gui.GUIResource;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.repository.dialog.SelectObjectDialog;
 import org.pentaho.di.ui.spoon.Spoon;
-import org.pentaho.di.ui.trans.step.BaseStepDialog;
 import org.pentaho.di.ui.util.DialogUtils;
 import org.pentaho.vfs.ui.VfsFileChooserDialog;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @SuppressWarnings( { "FieldCanBeLocal", "unused", "WeakerAccess" } )
 public abstract class BaseStreamingDialog extends BaseStepDialog implements StepDialogInterface {
@@ -123,7 +123,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     formLayout.marginHeight = 15;
 
     shell.setLayout( formLayout );
-    shell.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Shell.Title" ) );
+    shell.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.Shell.Title" ) );
 
     Label wicon = new Label( shell, SWT.RIGHT );
     wicon.setImage( getImage() );
@@ -134,7 +134,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     props.setLook( wicon );
 
     wlStepname = new Label( shell, SWT.RIGHT );
-    wlStepname.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Stepname.Label" ) );
+    wlStepname.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.Stepname.Label" ) );
     props.setLook( wlStepname );
     fdlStepname = new FormData();
     fdlStepname.left = new FormAttachment( 0, 0 );
@@ -163,7 +163,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
     wlTransPath = new Label( shell, SWT.LEFT );
     props.setLook( wlTransPath );
-    wlTransPath.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Transformation" ) );
+    wlTransPath.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.Transformation" ) );
     FormData fdlTransPath = new FormData();
     fdlTransPath.left = new FormAttachment( 0, 0 );
     fdlTransPath.top = new FormAttachment( spacer, 15 );
@@ -181,7 +181,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
     wbBrowseTrans = new Button( shell, SWT.PUSH );
     props.setLook( wbBrowseTrans );
-    wbBrowseTrans.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.Transformation.Browse" ) );
+    wbBrowseTrans.setText( BaseMessages.getString( PKG, "BaseStreaming.Dialog.Transformation.Browse" ) );
     FormData fdBrowseTrans = new FormData();
     fdBrowseTrans.left = new FormAttachment( wTransPath, 5 );
     fdBrowseTrans.top = new FormAttachment( wlTransPath, 5 );
@@ -192,7 +192,14 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
         if ( repository != null ) {
           selectRepositoryTrans();
         } else {
-          selectFileTrans( BaseStreamingDialog.this.wTransPath, Const.STRING_TRANS_FILTER_EXT );
+          Optional<String> fileName = selectFile( BaseStreamingDialog.this.wTransPath, Const.STRING_TRANS_FILTER_EXT );
+          fileName.ifPresent( fn -> {
+            try {
+              loadFileTrans( fn );
+            } catch ( KettleException ex ) {
+              ex.printStackTrace();
+            }
+          } );
         }
       }
     } );
@@ -272,7 +279,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
   private void buildSetupTab() {
     wSetupTab = new CTabItem( wTabFolder, SWT.NONE );
-    wSetupTab.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.SetupTab" ) );
+    wSetupTab.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.SetupTab" ) );
 
     wSetupComp = new Composite( wTabFolder, SWT.NONE );
     props.setLook( wSetupComp );
@@ -300,7 +307,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
   private void buildBatchTab() {
     wBatchTab = new CTabItem( wTabFolder, SWT.NONE );
-    wBatchTab.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.BatchTab" ) );
+    wBatchTab.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.BatchTab" ) );
 
     wBatchComp = new Composite( wTabFolder, SWT.NONE );
     props.setLook( wBatchComp );
@@ -318,7 +325,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
     wlBatchDuration = new Label( wBatchComp, SWT.LEFT );
     props.setLook( wlBatchDuration );
-    wlBatchDuration.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.BatchDuration" ) );
+    wlBatchDuration.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.BatchDuration" ) );
     FormData fdlBatchDuration = new FormData();
     fdlBatchDuration.left = new FormAttachment( 0, 0 );
     fdlBatchDuration.top = new FormAttachment( 0, 0 );
@@ -336,7 +343,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
     wlBatchSize = new Label( wBatchComp, SWT.LEFT );
     props.setLook( wlBatchSize );
-    wlBatchSize.setText( BaseMessages.getString( PKG, "KafkaConsumerInputDialog.BatchSize" ) );
+    wlBatchSize.setText( BaseMessages.getString( PKG, "BaseStreamingDialog.BatchSize" ) );
     FormData fdlBatchSize = new FormData();
     fdlBatchSize.left = new FormAttachment( 0, 0 );
     fdlBatchSize.top = new FormAttachment( wBatchDuration, 10 );
@@ -367,6 +374,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     if ( meta.getBatchDuration() != null ) {
       wBatchDuration.setText( meta.getBatchDuration() );
     }
+    specificationMethod = meta.getSpecificationMethod();
   }
 
   private Image getImage() {
@@ -415,8 +423,13 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
       default:
         break;
     }
+    additionalOks( meta );
 
     dispose();
+  }
+
+  protected void additionalOks( BaseStreamStepMeta meta ) {
+
   }
 
   private void selectRepositoryTrans() {
@@ -454,7 +467,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     executorTransMeta.clearChanged();
   }
 
-  protected void selectFileTrans( TextVar fileWidget, String[] fileFilters ) {
+  protected Optional<String> selectFile( TextVar fileWidget, String[] fileFilters ) {
     String curFile = transMeta.environmentSubstitute( fileWidget.getText() );
 
     FileObject root = null;
@@ -476,27 +489,28 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
           shell, null, fileFilters, Const.getTransformationFilterNames(),
           VfsFileChooserDialog.VFS_DIALOG_OPEN_FILE );
       if ( file == null ) {
-        return;
+        return Optional.empty();
       }
       String fileName = file.getName().toString();
       if ( fileName != null ) {
-        loadFileTrans( fileName );
         if ( parentFolder != null && fileName.startsWith( parentFolder ) ) {
           fileName = fileName.replace( parentFolder, "${" + Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY + "}" );
         }
         fileWidget.setText( fileName );
-        specificationMethod = ObjectLocationSpecificationMethod.FILENAME;
       }
+      return Optional.ofNullable( fileName );
     } catch ( IOException | KettleException e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "TransExecutorDialog.ErrorLoadingTransformation.DialogTitle" ),
         BaseMessages.getString( PKG, "TransExecutorDialog.ErrorLoadingTransformation.DialogMessage" ), e );
     }
+    return Optional.empty();
   }
 
   private void loadFileTrans( String fname ) throws KettleException {
     executorTransMeta = new TransMeta( transMeta.environmentSubstitute( fname ), repository );
     executorTransMeta.clearChanged();
+    specificationMethod = ObjectLocationSpecificationMethod.FILENAME;
   }
 
   // Method is defined as package-protected in order to be accessible by unit tests
