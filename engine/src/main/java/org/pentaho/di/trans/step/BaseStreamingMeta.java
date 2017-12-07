@@ -59,15 +59,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class BaseStreamingMeta extends StepWithMappingMeta implements StepMetaInterface {
-  public static final String CLUSTER_NAME = "clusterName";
-  public static final String CONSUMER_GROUP = "consumerGroup";
   public static final String TRANSFORMATION_PATH = "transformationPath";
   public static final String BATCH_SIZE = "batchSize";
   public static final String BATCH_DURATION = "batchDuration";
-  public static final String ADVANCED_CONFIG = "advancedConfig";
-  public static final String CONFIG_OPTION = "option";
-  public static final String OPTION_PROPERTY = "property";
-  public static final String OPTION_VALUE = "value";
 
   private static Class<?> PKG = BaseStreamingMeta.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
 
@@ -79,12 +73,6 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
 
   @Injection( name = "DURATION" )
   private String batchDuration;
-
-  @Injection( name = "NAMES", group = "CONFIGURATION_PROPERTIES" )
-  protected transient List<String> injectedConfigNames;
-
-  @Injection( name = "VALUES", group = "CONFIGURATION_PROPERTIES" )
-  protected transient List<String> injectedConfigValues;
 
   private Map<String, String> config = new LinkedHashMap<>();
 
@@ -107,20 +95,6 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
     setFileName( XMLHandler.getTagValue( stepnode, TRANSFORMATION_PATH ) );
     setBatchSize( XMLHandler.getTagValue( stepnode, BATCH_SIZE ) );
     setBatchDuration( XMLHandler.getTagValue( stepnode, BATCH_DURATION ) );
-
-    config = new LinkedHashMap<>();
-
-    Optional.ofNullable( XMLHandler.getSubNode( stepnode, ADVANCED_CONFIG ) ).map( node -> node.getChildNodes() )
-      .ifPresent( nodes -> IntStream.range( 0, nodes.getLength() ).mapToObj( nodes::item )
-        .filter( node -> node.getNodeType() == Node.ELEMENT_NODE )
-        .forEach( node -> {
-          if ( CONFIG_OPTION.equals( node.getNodeName() ) ) {
-            config.put( node.getAttributes().getNamedItem( OPTION_PROPERTY ).getTextContent(),
-              node.getAttributes().getNamedItem( OPTION_VALUE ).getTextContent() );
-          } else {
-            config.put( node.getNodeName(), node.getTextContent() );
-          }
-        } ) );
   }
 
   public void setDefault() {
@@ -130,18 +104,10 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
 
   public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases )
     throws KettleException {
-
     setTransformationPath( rep.getStepAttributeString( id_step, TRANSFORMATION_PATH ) );
     setFileName( rep.getStepAttributeString( id_step, TRANSFORMATION_PATH ) );
     setBatchSize( rep.getStepAttributeString( id_step, BATCH_SIZE ) );
     setBatchDuration( rep.getStepAttributeString( id_step, BATCH_DURATION ) );
-
-    config = new LinkedHashMap<>();
-
-    for ( int i = 0; i < rep.getStepAttributeInteger( id_step, ADVANCED_CONFIG + "_COUNT" ); i++ ) {
-      config.put( rep.getStepAttributeString( id_step, i, ADVANCED_CONFIG + "_NAME" ),
-          rep.getStepAttributeString( id_step, i, ADVANCED_CONFIG + "_VALUE" ) );
-    }
   }
 
   public void saveRep( Repository rep, IMetaStore metaStore, ObjectId transId, ObjectId stepId )
@@ -150,14 +116,6 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
     rep.saveStepAttribute( transId, stepId, TRANSFORMATION_PATH, transformationPath );
     rep.saveStepAttribute( transId, stepId, BATCH_SIZE, batchSize );
     rep.saveStepAttribute( transId, stepId, BATCH_DURATION, batchDuration );
-
-    rep.saveStepAttribute( transId, stepId, ADVANCED_CONFIG + "_COUNT", getConfig().size() );
-
-    int i = 0;
-    for ( String propName : getConfig().keySet() ) {
-      rep.saveStepAttribute( transId, stepId, i, ADVANCED_CONFIG + "_NAME", propName );
-      rep.saveStepAttribute( transId, stepId, i++, ADVANCED_CONFIG + "_VALUE", getConfig().get( propName ) );
-    }
   }
 
   public abstract void getFields(
@@ -234,28 +192,11 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
     retval.append( "    " ).append( XMLHandler.addTagValue( BATCH_SIZE, batchSize ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( BATCH_DURATION, batchDuration ) );
 
-    getFieldDefinitions().forEach( field ->
-      retval.append( "    " ).append(
-        XMLHandler.addTagValue( OUTPUT_FIELD_TAG_NAME, field.getOutputName(), true,
-          KAFKA_NAME_ATTRIBUTE, field.getKafkaName().toString(),
-          TYPE_ATTRIBUTE, field.getOutputType().toString() ) ) );
-
-    retval.append( "    " ).append( XMLHandler.openTag( ADVANCED_CONFIG ) ).append( Const.CR );
-    getConfig().forEach( ( key, value ) -> retval.append( "        " )
-        .append( XMLHandler.addTagValue( CONFIG_OPTION, "", true,
-                              OPTION_PROPERTY, (String) key, OPTION_VALUE, (String) value ) ) );
-    retval.append( "    " ).append( XMLHandler.closeTag( ADVANCED_CONFIG ) ).append( Const.CR );
-
     return retval.toString();
   }
 
   public void setConfig( Map<String, String> config ) {
     this.config = config;
-  }
-
-  public Map<String, String> getConfig() {
-    applyInjectedProperties();
-    return config;
   }
 
   @Override
@@ -287,21 +228,5 @@ public abstract class BaseStreamingMeta extends StepWithMappingMeta implements S
   @Override public Object loadReferencedObject( int index, Repository rep, IMetaStore metaStore, VariableSpace space )
       throws KettleException {
     return loadMappingMeta( this, rep, metaStore, space );
-  }
-
-  protected void applyInjectedProperties() {
-    if ( injectedConfigNames != null || injectedConfigValues != null ) {
-      Preconditions.checkState( injectedConfigNames != null, "Options names were not injected" );
-      Preconditions.checkState( injectedConfigValues != null, "Options values were not injected" );
-      Preconditions.checkState( injectedConfigNames.size() == injectedConfigValues.size(),
-          "Injected different number of options names and value" );
-
-      setConfig( IntStream.range( 0, injectedConfigNames.size() ).boxed().collect( Collectors
-          .toMap( injectedConfigNames::get, injectedConfigValues::get, ( v1, v2 ) -> v1,
-              LinkedHashMap::new ) ) );
-
-      injectedConfigNames = null;
-      injectedConfigValues = null;
-    }
   }
 }

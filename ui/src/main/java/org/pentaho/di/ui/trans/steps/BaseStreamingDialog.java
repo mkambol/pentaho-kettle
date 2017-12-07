@@ -192,7 +192,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
         if ( repository != null ) {
           selectRepositoryTrans();
         } else {
-          selectFileTrans();
+          selectFileTrans( BaseStreamingDialog.this.wTransPath, Const.STRING_TRANS_FILTER_EXT );
         }
       }
     } );
@@ -357,7 +357,17 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
   }
 
 
-  abstract protected void getData();
+  protected void getData() {
+    if ( meta.getTransformationPath() != null ) {
+      wTransPath.setText( meta.getTransformationPath() );
+    }
+    if ( meta.getBatchSize() != null ) {
+      wBatchSize.setText( meta.getBatchSize() );
+    }
+    if ( meta.getBatchDuration() != null ) {
+      wBatchDuration.setText( meta.getBatchDuration() );
+    }
+  }
 
   private Image getImage() {
     PluginInterface plugin =
@@ -444,8 +454,8 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
     executorTransMeta.clearChanged();
   }
 
-  private void selectFileTrans() {
-    String curFile = transMeta.environmentSubstitute( wTransPath.getText() );
+  protected void selectFileTrans( TextVar fileWidget, String[] fileFilters ) {
+    String curFile = transMeta.environmentSubstitute( fileWidget.getText() );
 
     FileObject root = null;
 
@@ -463,7 +473,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
       VfsFileChooserDialog vfsFileChooser = Spoon.getInstance().getVfsFileChooserDialog( root.getParent(), root );
       FileObject file =
         vfsFileChooser.open(
-          shell, null, Const.STRING_TRANS_FILTER_EXT, Const.getTransformationFilterNames(),
+          shell, null, fileFilters, Const.getTransformationFilterNames(),
           VfsFileChooserDialog.VFS_DIALOG_OPEN_FILE );
       if ( file == null ) {
         return;
@@ -474,7 +484,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
         if ( parentFolder != null && fileName.startsWith( parentFolder ) ) {
           fileName = fileName.replace( parentFolder, "${" + Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY + "}" );
         }
-        wTransPath.setText( fileName );
+        fileWidget.setText( fileName );
         specificationMethod = ObjectLocationSpecificationMethod.FILENAME;
       }
     } catch ( IOException | KettleException e ) {

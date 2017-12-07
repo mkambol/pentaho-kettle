@@ -23,6 +23,7 @@ import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleXMLException;
+import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.variables.VariableSpace;
@@ -44,11 +45,12 @@ import java.util.List;
 
 @Step( id = "FileStream", image = "FileStream.svg", name = "File Stream",
   description = "Streams lines from a file as they are added.  aka tail -f", categoryDescription = "Streaming" )
+@InjectionSupported( localizationPrefix = "FileStreamMeta.Injection." )
 public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = FileStream.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
-  private String sourceFile;
-  public static final String SOURCE_FILE = "sourceFile";
+  private String sourcePath;
+  public static final String SOURCE_PATH = "sourcePath";
 
   public FileStreamMeta() {
     super(); // allocate BaseStepMeta
@@ -65,7 +67,7 @@ public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInt
 
   @Override protected void readData( Node stepnode ) {
     super.readData( stepnode );
-    setSourceFile( XMLHandler.getTagValue( stepnode, SOURCE_FILE ) );
+    setSourcePath( XMLHandler.getTagValue( stepnode, SOURCE_PATH ) );
   }
 
   public void setDefault() {
@@ -74,13 +76,13 @@ public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInt
   public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases )
     throws KettleException {
     super.readRep( rep, metaStore, id_step, databases );
-    setSourceFile( rep.getStepAttributeString( id_step, SOURCE_FILE ) );
+    setSourcePath( rep.getStepAttributeString( id_step, SOURCE_PATH ) );
   }
 
   public void saveRep( Repository rep, IMetaStore metaStore, ObjectId transId, ObjectId stepId )
     throws KettleException {
     super.saveRep( rep, metaStore, transId, stepId );
-    rep.saveStepAttribute( transId, stepId, SOURCE_FILE, sourceFile );
+    rep.saveStepAttribute( transId, stepId, SOURCE_PATH, sourcePath );
   }
 
   public void getFields( RowMetaInterface rowMeta, String origin, RowMetaInterface[] info, StepMeta nextStep,
@@ -101,11 +103,11 @@ public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInt
     return "org.pentaho.di.trans.step.filestream.FileStreamDialog";
   }
 
-  public String getSourceFile() {
-    return sourceFile;
+  public String getSourcePath() {
+    return sourcePath;
   }
 
-  public void setSourceFile( String sourceFile ) {
-    this.sourceFile = sourceFile;
+  public void setSourcePath( String sourcePath ) {
+    this.sourcePath = sourcePath;
   }
 }
