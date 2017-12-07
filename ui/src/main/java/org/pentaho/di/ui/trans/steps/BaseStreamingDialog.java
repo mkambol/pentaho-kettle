@@ -57,8 +57,8 @@ import org.pentaho.di.repository.RepositoryObject;
 import org.pentaho.di.repository.RepositoryObjectType;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
-import org.pentaho.di.trans.step.BaseStreamingMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
+import org.pentaho.di.trans.streaming.common.BaseStreamStepMeta;
 import org.pentaho.di.ui.core.ConstUI;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.gui.GUIResource;
@@ -78,7 +78,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
   private static Class<?> PKG = BaseStreamingDialog.class;
   // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
 
-  protected BaseStreamingMeta meta;
+  protected BaseStreamStepMeta meta;
   protected TransMeta executorTransMeta = null;
 
   protected Label wlTransPath;
@@ -103,7 +103,7 @@ public abstract class BaseStreamingDialog extends BaseStepDialog implements Step
 
   public BaseStreamingDialog( Shell parent, Object in, TransMeta tr, String sname ) {
     super( parent, (BaseStepMeta) in, tr, sname );
-    meta = (BaseStreamingMeta) in;
+    meta = (BaseStreamStepMeta) in;
   }
 
   public String open() {

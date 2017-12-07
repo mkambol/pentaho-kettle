@@ -22,23 +22,20 @@ import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
-import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.variables.VariableSpace;
-import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
-import org.pentaho.di.trans.step.BaseStreamingStepMeta;
 import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
+import org.pentaho.di.trans.streaming.common.BaseStreamStepMeta;
 import org.pentaho.metastore.api.IMetaStore;
-import org.w3c.dom.Node;
 
 import java.util.List;
 
@@ -46,7 +43,7 @@ import java.util.List;
 @Step( id = "FileStream", image = "FileStream.svg", name = "File Stream",
   description = "Streams lines from a file as they are added.  aka tail -f", categoryDescription = "Streaming" )
 @InjectionSupported( localizationPrefix = "FileStreamMeta.Injection." )
-public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInterface {
+public class FileStreamMeta extends BaseStreamStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = FileStream.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
   private String sourcePath;
@@ -56,19 +53,19 @@ public class FileStreamMeta extends BaseStreamingStepMeta implements StepMetaInt
     super(); // allocate BaseStepMeta
   }
 
-  public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
-    readData( stepnode );
-  }
+//  public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
+//    readData( stepnode );
+//  }
 
   public Object clone() {
     Object retval = super.clone();
     return retval;
   }
 
-  @Override protected void readData( Node stepnode ) {
-    super.readData( stepnode );
-    setSourcePath( XMLHandler.getTagValue( stepnode, SOURCE_PATH ) );
-  }
+//  @Override protected void readData( Node stepnode ) {
+//    super.readData( stepnode );
+//    setSourcePath( XMLHandler.getTagValue( stepnode, SOURCE_PATH ) );
+//  }
 
   public void setDefault() {
   }
