@@ -1,7 +1,0 @@
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.0.0">
-
-  <feature name="file-stream-feature" version="8.1-SNAPSHOT">
-    <bundle>mvn:org.pentaho/file-stream/8.1-SNAPSHOT</bundle>
-  </feature>
-
-</features>
