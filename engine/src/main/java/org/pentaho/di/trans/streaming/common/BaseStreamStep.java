@@ -39,6 +39,7 @@ import org.pentaho.di.trans.streaming.api.StreamSource;
 import org.pentaho.di.trans.streaming.api.StreamWindow;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class BaseStreamStep<I> extends BaseStep {
@@ -57,9 +58,7 @@ public class BaseStreamStep<I> extends BaseStep {
     Preconditions.checkArgument( first,
       "Streaming steps should only have processRow called once." );
 
-    Iterable<Result> subTransResults = window.buffer( source.rows() );
-
-    subTransResults.forEach( result -> {
+    bufferStream().forEach( result -> {
         if ( result.getNrErrors() > 0 ) {
           stopAll();
         } else {
@@ -70,6 +69,9 @@ public class BaseStreamStep<I> extends BaseStep {
     return false;
   }
 
+  protected Iterable<Result> bufferStream() {
+    return window.buffer( source.rows() );
+  }
 
   @Override
   public void stopRunning( StepMetaInterface stepMetaInterface, StepDataInterface stepDataInterface )
@@ -84,9 +86,7 @@ public class BaseStreamStep<I> extends BaseStep {
   }
 
   @Override public Collection<StepStatus> subStatuses() {
-    //return kafkaConsumerInputData.subtransExecutor.getStatuses().values();
-    // TODO, handle statuses.
-    return null;
+    return Collections.emptyList();
   }
 
   @Override public void pauseRunning() {

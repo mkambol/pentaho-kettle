@@ -32,12 +32,15 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
+import org.pentaho.di.trans.step.StepStatus;
 import org.pentaho.di.trans.steps.transexecutor.TransExecutorData;
 import org.pentaho.di.trans.steps.transexecutor.TransExecutorParameters;
 import org.pentaho.di.trans.streaming.common.BaseStreamStep;
 import org.pentaho.di.trans.streaming.common.FixedTimeStreamWindow;
 
 import java.io.FileNotFoundException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -47,6 +50,7 @@ public class FileStream extends BaseStreamStep<List<String>> implements StepInte
 
   private static Class<?> PKG = FileStreamMeta.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
   private FileStreamMeta fileStreamMeta;
+  private SubtransExecutor subtransExecutor;
 
   public FileStream( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
                      Trans trans ) {
@@ -56,7 +60,9 @@ public class FileStream extends BaseStreamStep<List<String>> implements StepInte
   public boolean init( StepMetaInterface stepMetaInterface, StepDataInterface stepDataInterface ) {
     fileStreamMeta = (FileStreamMeta) stepMetaInterface;
 
-    SubtransExecutor subtransExecutor = null;
+    if (fileStreamMeta == null || fileStreamMeta.getTransformationPath() == null) {
+      return super.init( stepMetaInterface, stepDataInterface ); // TODO fix hackiness
+    }
     try {
       subtransExecutor = new SubtransExecutor(
         getTrans(), new TransMeta( fileStreamMeta.getTransformationPath() ), true,
@@ -75,6 +81,10 @@ public class FileStream extends BaseStreamStep<List<String>> implements StepInte
       e.printStackTrace();
     }
     return super.init( stepMetaInterface, stepDataInterface );
+  }
+
+  @Override public Collection<StepStatus> subStatuses() {
+    return subtransExecutor != null ? subtransExecutor.getStatuses().values() : Collections.emptyList();
   }
 
 //  public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
