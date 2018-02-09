@@ -56,13 +56,27 @@ public class FixedTimeStreamWindow<I extends List> implements StreamWindow<I, Re
     this.batchSize = batchSize;
   }
 
+  // No longer needed?
   @Override public Iterable<Result> buffer( Iterable<I> rowIterator ) {
     Observable<I> observable = Observable.fromIterable( rowIterator )
+      .observeOn( Schedulers.io() )
       .subscribeOn( Schedulers.newThread() );
     Observable<List<I>> buffer = millis > 0
       ? batchSize > 0 ? observable.buffer( millis, MILLISECONDS, batchSize ) : observable.buffer( millis, MILLISECONDS )
       : observable.buffer( batchSize );
     return buffer
+      .filter( list -> !list.isEmpty() )
+      .map( this::sendBufferToSubtrans )
+      .takeWhile( result -> result.getNrErrors() == 0 )
+      .blockingIterable();
+  }
+
+  @Override public Iterable<Result> buffer( Observable<I> observable ) {
+    Observable<List<I>> buffer = millis > 0
+      ? batchSize > 0 ? observable.buffer( millis, MILLISECONDS, batchSize ) : observable.buffer( millis, MILLISECONDS )
+      : observable.buffer( batchSize );
+    return buffer
+      .observeOn( Schedulers.io() )
       .filter( list -> !list.isEmpty() )
       .map( this::sendBufferToSubtrans )
       .takeWhile( result -> result.getNrErrors() == 0 )

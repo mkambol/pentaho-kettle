@@ -23,6 +23,7 @@
 package org.pentaho.di.trans.streaming.api;
 
 
+import io.reactivex.Observable;
 
 /**
  * Defines a source of streaming data.  A StreamSource implementation is used
@@ -35,6 +36,12 @@ public interface StreamSource<R>  {
    * Returns the rows of data as an iterable.
    */
   Iterable<R> rows();
+
+
+  /**
+   * Returns the rows of data as an iterable.
+   */
+  Observable<R> observable();
 
   /**
    * Signals this stream is no longer in use and can clean up

@@ -71,8 +71,15 @@ public abstract class BlockingQueueStreamSource<T> implements StreamSource<T> {
       .blockingIterable();
   }
 
+
+  @Override public Observable<T> observable() {
+    return Observable
+      .fromPublisher( publishProcessor );
+  }
+
   @Override public void close() {
     if ( !publishProcessor.hasComplete() ) {
+
       publishProcessor.onComplete();
     }
   }

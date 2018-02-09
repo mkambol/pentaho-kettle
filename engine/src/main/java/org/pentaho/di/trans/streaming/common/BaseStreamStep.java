@@ -33,6 +33,8 @@ import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.SubtransExecutor;
 import org.pentaho.di.trans.Trans;
+import org.pentaho.di.trans.TransAdapter;
+import org.pentaho.di.trans.TransListener;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStep;
 import org.pentaho.di.trans.step.StepDataInterface;
@@ -122,7 +124,7 @@ public class BaseStreamStep extends BaseStep {
   }
 
   private Iterable<Result> bufferStream() {
-    return window.buffer( source.rows() );
+    return window.buffer( source.observable() );
   }
 
   @Override
