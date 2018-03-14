@@ -74,6 +74,7 @@
         <module>ms-access-bulk-loader</module>
         <module>xml</module>
         <module>google-cloud-storage-vfs</module>
+        <module>jms</module>
       </modules>
     </profile>
 
