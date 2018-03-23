@@ -128,6 +128,7 @@ public class ConnectionForm {
 
       Button connectionButton = new Button( wConnectionGroup, SWT.RADIO );
       connectionButton.setText( type.toString() );
+
       typesToButtons.put( type, connectionButton );
 
 
@@ -234,5 +235,12 @@ public class ConnectionForm {
     return wPassword.getText();
   }
 
+  public String getConnectionType() {
+    return typesToButtons.entrySet().stream()
+      .filter( entry -> entry.getValue().getSelection() )
+      .findFirst()
+      .orElseThrow( () -> new IllegalStateException( "One type should be selected" ) )
+      .getKey().name();
+  }
 
 }

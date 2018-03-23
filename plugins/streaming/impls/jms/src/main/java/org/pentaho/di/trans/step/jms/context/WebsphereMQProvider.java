@@ -43,7 +43,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.regex.Pattern.compile;
 import static org.pentaho.di.i18n.BaseMessages.getString;
 import static org.pentaho.di.trans.step.jms.context.JmsProvider.ConnectionType.WEBSPHERE;
-import static org.pentaho.di.trans.step.jms.context.JmsProvider.DestinationType.QUEUE;
 
 public class WebsphereMQProvider implements JmsProvider {
 
@@ -85,12 +84,6 @@ public class WebsphereMQProvider implements JmsProvider {
       throw new RuntimeException( e );
     }
   }
-
-  private boolean isQueue( JmsDelegate meta, VariableSpace variableSpace ) {
-    return DestinationType.valueOf(
-      variableSpace.environmentSubstitute( meta.destinationType ) ).equals( QUEUE );
-  }
-
 
   static class MQUrlResolver {
     private final JmsDelegate meta;

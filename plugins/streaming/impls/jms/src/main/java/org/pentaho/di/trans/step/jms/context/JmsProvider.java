@@ -30,6 +30,7 @@ import javax.jms.JMSContext;
 
 import static org.pentaho.di.i18n.BaseMessages.getString;
 import static org.pentaho.di.trans.step.jms.JmsConstants.PKG;
+import static org.pentaho.di.trans.step.jms.context.JmsProvider.DestinationType.QUEUE;
 
 
 public interface JmsProvider {
@@ -39,6 +40,11 @@ public interface JmsProvider {
   JMSContext getContext( JmsDelegate meta, VariableSpace variableSpace );
 
   Destination getDestination( JmsDelegate meta, VariableSpace variableSpace );
+
+  default boolean isQueue( JmsDelegate meta, VariableSpace variableSpace ) {
+    return DestinationType.valueOf(
+      variableSpace.environmentSubstitute( meta.destinationType ) ).equals( QUEUE );
+  }
 
 
   enum ConnectionType {

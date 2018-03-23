@@ -77,6 +77,35 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-jms-client</artifactId>
+      <scope>provided</scope>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-core-client</artifactId>
+      <scope>provided</scope>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-commons</artifactId>
+      <scope>provided</scope>
+      <version>2.5.0</version>
+    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.sun.jndi</groupId>-->
+      <!--<artifactId>providerutil</artifactId>-->
+      <!--<version>1.2</version>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>com.sun.jndi</groupId>-->
+      <!--<artifactId>fscontext</artifactId>-->
+      <!--<version>RELEASE</version>-->
+    <!--</dependency>-->
+
+    <dependency>
       <groupId>io.reactivex.rxjava2</groupId>
       <artifactId>rxjava</artifactId>
       <version>${rxjava.version}</version>
@@ -87,6 +116,7 @@
       <artifactId>javax.jms-api</artifactId>
       <version>${jms.version}</version>
     </dependency>
+
 
     <dependency>
       <groupId>org.mockito</groupId>
@@ -100,11 +130,39 @@
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
+
+
+
   </dependencies>
 
 
   <build>
+
+
     <plugins>
+      <!--<plugin>-->
+        <!--<groupId>org.apache.maven.plugins</groupId>-->
+        <!--<artifactId>maven-shade-plugin</artifactId>-->
+        <!--<version>3.1.0</version>-->
+        <!--<executions>-->
+          <!--<execution>-->
+            <!--<phase>package</phase>-->
+            <!--<goals>-->
+              <!--<goal>shade</goal>-->
+            <!--</goals>-->
+            <!--<configuration>-->
+              <!--<artifactSet>-->
+                <!--<includes>-->
+                  <!--<include>org.apache.activemq:artemis-jms-client</include>-->
+                  <!--<include>org.apache.activemq:artemis-commons</include>-->
+                <!--</includes>-->
+              <!--</artifactSet>-->
+              <!--<createDependencyReducedPom>false</createDependencyReducedPom>-->
+            <!--</configuration>-->
+          <!--</execution>-->
+        <!--</executions>-->
+      <!--</plugin>-->
+
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -116,7 +174,7 @@
             <Bundle-Version>${project.version}</Bundle-Version>
             <Export-Package>org.pentaho.di.trans.step.jms.*;version=${project.version}</Export-Package>
             <Import-Package>
-              com.ibm.msg.client.wmq;resolution:=optional,com.ibm.mq.jms;resolution:=optional,org.eclipse.swt*;resolution:=optional,org.pentaho.di.osgi,org.pentaho.di.core.plugins,*
+              javax.jms,javax.naming,com.ibm.msg.client.wmq;resolution:=optional,com.ibm.mq.jms;resolution:=optional,org.eclipse.swt*;resolution:=optional,org.pentaho.di.osgi,org.pentaho.di.core.plugins,*
             </Import-Package>
           </instructions>
         </configuration>
