@@ -157,6 +157,21 @@ public class TransWebSocketEngineAdapter extends Trans {
     }
   }
 
+  /**
+   * TODO - cancelling thingy.
+   */
+  @Override public void safeStop() {
+    try {
+      getDaemonEndpoint().sendMessage(
+        StopMessage.builder()
+          .reasonPhrase( "User Request" )
+          .safeStop( true )
+          .build() );
+    } catch ( KettleException e ) {
+      getLogChannel().logDebug( e.getMessage(), e );
+    }
+  }
+
   @Override public void prepareExecution( String[] arguments ) throws KettleException {
     activateParameters();
     transMeta.activateParameters();
@@ -366,7 +381,7 @@ public class TransWebSocketEngineAdapter extends Trans {
     return new ArrayList<>( operationToCombi.values() );
   }
 
-  @SuppressWarnings( "unchecked" )
+  @SuppressWarnings ( "unchecked" )
   private List<StepMetaDataCombi> getSubSteps( Transformation transformation, StepMetaDataCombi combi ) {
     HashMap<String, Transformation> config =
       ( (Optional<HashMap<String, Transformation>>) transformation
@@ -401,7 +416,7 @@ public class TransWebSocketEngineAdapter extends Trans {
         try {
           if ( failedTests > MAX_TEST_FAILED ) {
             // Too many tests missed let's close
-            errors.incrementAndGet();
+              errors.incrementAndGet();
             getLogChannel().logError(
               "Session Monitor detected that communication with the server was lost. Finalizing execution." );
             if ( !cancelling ) {

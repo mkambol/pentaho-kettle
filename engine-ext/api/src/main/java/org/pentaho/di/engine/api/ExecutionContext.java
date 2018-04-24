@@ -61,4 +61,12 @@ public interface ExecutionContext extends SubscriptionManager {
   LogLevel getLoggingLogLevel();
 
   void stopTransformation();
+
+  /**
+   * Corresponds to Trans.safeStop()
+   */
+  default void safeStopTransformation() {
+    stopTransformation();
+  }
+
 }
