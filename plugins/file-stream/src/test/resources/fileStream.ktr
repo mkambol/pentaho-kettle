@@ -478,9 +478,9 @@
       <method>none</method>
       <schema_name/>
     </partitioning>
-    <sourcePath>/Users/mcampbell/data/foo.txt</sourcePath>
+    <sourcePath>/Users/matcampbell/data/foo.txt</sourcePath>
     <NUM_MESSAGES>5</NUM_MESSAGES>
-    <TRANSFORMATION_PATH>/Users/mcampbell/dev/pdi-tests/streaming/subtrans.ktr</TRANSFORMATION_PATH>
+    <TRANSFORMATION_PATH>/Users/matcampbell/dev/pdi-tests/streaming/subtrans.ktr</TRANSFORMATION_PATH>
     <DURATION>500</DURATION>
     <cluster_schema/>
     <remotesteps>

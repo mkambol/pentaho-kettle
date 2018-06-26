@@ -96,7 +96,7 @@ public class FileStreamTest {
   }
 
 
-  @Ignore
+
   @Test public void testStreamFile() throws IOException {
     FileStream step =
       (FileStream) streamMeta.getStep( stepMeta, stepData, 1, transMeta, trans );
@@ -108,6 +108,7 @@ public class FileStreamTest {
 
     StreamSource<List<Object>> source = step.getStreamSource();
     source.open();
+
 
     writer.write( "line 1" );
     writer.flush();
@@ -123,7 +124,7 @@ public class FileStreamTest {
 
     Iterator iter = source.observable().blockingIterable().iterator();
 
-    for ( int i = 0; i < 10; i++ ) {
+    for ( int i = 0; i < 100; i++ ) {
 
       System.out.println( iter.next() );
     }

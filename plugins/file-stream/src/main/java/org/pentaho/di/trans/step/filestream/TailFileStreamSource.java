@@ -22,8 +22,18 @@
 
 package org.pentaho.di.trans.step.filestream;
 
+import org.apache.commons.vfs2.FileChangeEvent;
+import org.apache.commons.vfs2.FileListener;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.RandomAccessContent;
+import org.apache.commons.vfs2.impl.DefaultFileMonitor;
+import org.apache.commons.vfs2.util.RandomAccessMode;
+import org.pentaho.di.core.exception.KettleFileException;
 import org.pentaho.di.core.logging.LogChannel;
 import org.pentaho.di.core.logging.LogChannelInterface;
+import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.streaming.common.BlockingQueueStreamSource;
 
@@ -31,10 +41,13 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Collections.singletonList;
 
@@ -74,13 +87,68 @@ public class TailFileStreamSource extends BlockingQueueStreamSource<List<Object>
 
   private void fileReadLoop() {
 
-    try ( BufferedReader reader = new BufferedReader( new FileReader( filename ) ) ) {
-      while ( true ) {
-        acceptRows( singletonList( singletonList( getNextLine( reader ) ) ) );
-      }
-    } catch ( IOException | InterruptedException e ) {
-      logChannel.logError( BaseMessages.getString( PKG, "FileStream.Error.FileStreamError" ), e );
+    AtomicLong index = new AtomicLong( 0 );
+    try {
+
+      FileObject filObj =
+        KettleVFS.getFileObject( filename );
+
+      RandomAccessContent rand =
+        filObj.getContent().getRandomAccessContent( RandomAccessMode.READ );
+      DefaultFileMonitor fm = new DefaultFileMonitor( new FileListener() {
+        @Override public void fileCreated( FileChangeEvent fileChangeEvent ) throws Exception {
+          System.out.println( "File created" );
+        }
+
+        @Override public void fileDeleted( FileChangeEvent fileChangeEvent ) throws Exception {
+          System.out.println( "File deleted" );
+        }
+
+        AtomicBoolean loading = new AtomicBoolean( false );
+
+        @Override public void fileChanged( FileChangeEvent fileChangeEvent ) throws Exception {
+          System.out.println( "File Changed.  Length=" + rand.length() );
+          if ( loading.getAndSet( true ) ) {
+            return;
+          }
+
+          long offset = index.get();
+          List<List<Object>> lines = new ArrayList<>();
+          rand.seek( offset );
+          while ( offset < rand.length() ) {
+            byte c = rand.readByte();
+            String next = new String( new byte[] { rand.readByte() } );
+            StringBuilder builder = new StringBuilder();
+            while ( !next.equals( "\n" ) ) {
+              builder.append( next );
+
+              next = new String( new byte[] { rand.readByte() } );
+            }
+
+            lines.add( singletonList( builder.toString() ) );
+            offset = rand.getFilePointer();
+          }
+          System.out.println( "CU" );
+          index.set( offset );
+          acceptRows( lines );
+          loading.set( false );
+        }
+
+      } );
+      fm.addFile( filObj );
+      fm.start();
+    } catch ( KettleFileException | FileSystemException e ) {
+      e.printStackTrace();
     }
+
+
+    //    try ( BufferedReader reader = new BufferedReader( new FileReader( filename ) ) ) {
+    //      while ( true ) {
+    //        acceptRows( singletonList( singletonList( getNextLine( reader ) ) ) );
+    //      }
+    //    } catch ( IOException | InterruptedException e ) {
+    //      logChannel.logError( BaseMessages.getString( PKG, "FileStream.Error.FileStreamError" ), e );
+    //    }
   }
 
   private String getNextLine( BufferedReader reader ) throws IOException, InterruptedException {
