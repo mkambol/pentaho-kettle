@@ -37,6 +37,7 @@ import org.pentaho.di.core.plugins.JobEntryDialogFragmentType;
 import org.pentaho.di.core.plugins.JobEntryPluginType;
 import org.pentaho.di.core.plugins.KettleLifecyclePluginType;
 import org.pentaho.di.core.plugins.LifecyclePluginType;
+import org.pentaho.di.core.plugins.OperationPluginType;
 import org.pentaho.di.core.plugins.PartitionerPluginType;
 import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.plugins.PluginTypeInterface;
@@ -113,7 +114,8 @@ public class KettleEnvironment {
       CompressionPluginType.getInstance(),
       AuthenticationProviderPluginType.getInstance(),
       AuthenticationConsumerPluginType.getInstance(),
-      EnginePluginType.getInstance()
+      EnginePluginType.getInstance(),
+      OperationPluginType.getInstance()
     ), simpleJndi );
   }
 
