@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.TYPE )
-public @interface EnginePlugin {
+public @interface  EnginePlugin {
   /**
    * @return The ID of the password encoder plugin. You can specify more than one ID in a comma separated format: id1,id2,id3 for
    *         deprecation purposes.

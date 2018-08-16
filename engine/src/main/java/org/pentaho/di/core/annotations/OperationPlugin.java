@@ -32,15 +32,14 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.TYPE )
 public @interface OperationPlugin {
-  /**
-   * @return The ID of the password encoder plugin. You can specify more than one ID in a comma separated format: id1,id2,id3 for
-   *         deprecation purposes.
-   */
+
   String id();
 
   String name();
 
   String description() default "";
+
+  String stepId();
 
   /**
    * @return True if a separate class loader is needed every time this class is instantiated

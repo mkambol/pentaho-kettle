@@ -19,22 +19,33 @@ public class OperationPluginType extends BasePluginType {
 
   private OperationPluginType() {
     super( OperationPlugin.class, "OPERATION_PLUGIN", "AEL Operation Plugin" );
+    populateFolders( "steps" );
   }
 
   @Override protected void registerXmlPlugins() throws KettlePluginException {
+  }
 
+
+  @Override
+  protected String getXmlPluginFile() {
+    return "dummy";
+  }
+
+  @Override
+  protected boolean isReturn() {
+    return true;
   }
 
   @Override protected String extractID( Annotation annotation ) {
-    return null;
+    return ( (OperationPlugin) annotation ).id();
   }
 
   @Override protected String extractName( Annotation annotation ) {
-    return null;
+    return ( (OperationPlugin) annotation ).name();
   }
 
   @Override protected String extractDesc( Annotation annotation ) {
-    return null;
+    return ( (OperationPlugin) annotation ).description();
   }
 
   @Override protected String extractCategory( Annotation annotation ) {
