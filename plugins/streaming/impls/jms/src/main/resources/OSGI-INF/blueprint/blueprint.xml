@@ -51,9 +51,18 @@
   </service>
 
   <!-- Data-lineage analyzer for the JMS Consumer step -->
-  <bean id="JmsConsumerAnalyzer"
-        class="org.pentaho.di.trans.step.jms.analyzer.JmsConsumerAnalyzer" />
-  <service id="jmsConsumerAnalyzerService"
-           interface="org.pentaho.metaverse.api.analyzer.kettle.step.IClonableStepAnalyzer"
-           ref="JmsConsumerAnalyzer"/>
+  <bean id="JmsProducerAnalyzer" class="org.pentaho.metaverse.api.analyzer.kettle.annotations.AnnotationDrivenStepMetaAnalyzer" >
+    <argument ref="JmsProducer2" />
+  </bean>
+  <service id="JmsProducerStepAnalyzerService"
+           interface="org.pentaho.metaverse.api.analyzer.kettle.step.IStepAnalyzer"
+           ref="JmsProducerAnalyzer"/>
+
+
+
+  <!--<bean id="JmsConsumerAnalyzer"-->
+        <!--class="org.pentaho.di.trans.step.jms.analyzer.JmsConsumerAnalyzer" />-->
+  <!--<service id="jmsConsumerAnalyzerService"-->
+           <!--interface="org.pentaho.metaverse.api.analyzer.kettle.step.IClonableStepAnalyzer"-->
+           <!--ref="JmsConsumerAnalyzer"/>-->
 </blueprint>
