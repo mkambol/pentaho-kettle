@@ -20,12 +20,21 @@
  *
  ******************************************************************************/
 
-package org.pentaho.di.core.database;
+package org.pentaho.di.plugins.databases;
 
 import com.google.common.base.Preconditions;
 import org.pentaho.di.core.Const;
+import org.pentaho.di.core.database.BaseDatabaseMeta;
+import org.pentaho.di.core.database.Database;
+import org.pentaho.di.core.database.DatabaseInterface;
+import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.exception.KettleDatabaseException;
+import org.pentaho.di.core.plugins.DatabaseMetaPlugin;
 import org.pentaho.di.core.row.ValueMetaInterface;
 
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,10 +49,31 @@ import static org.pentaho.di.core.row.ValueMetaInterface.TYPE_TIMESTAMP;
 import static org.pentaho.di.core.util.Utils.isEmpty;
 
 @SuppressWarnings ( "unused" )
+@DatabaseMetaPlugin (
+  type = "SNOWFLAKEHV",
+  typeDescription = "Snowflake"
+)
 public class SnowflakeHVDatabaseMeta extends BaseDatabaseMeta implements DatabaseInterface {
 
   private static final String ALTER_TABLE = "ALTER TABLE ";
   public static final String WAREHOUSE = "warehouse";
+
+  private static final String DRIVER_CLASS = "com.snowflake.client.jdbc.SnowflakeDriver";
+
+
+  public SnowflakeHVDatabaseMeta() {
+    super();
+    // force registration w/ DriverManager.  Done
+    // via the Database class to avoid Classloader issues.
+    try {
+      Database.registerDriver( Class.forName(DRIVER_CLASS) );
+    } catch ( KettleDatabaseException e ) {
+      e.printStackTrace();
+    } catch ( ClassNotFoundException e ) {
+      e.printStackTrace();
+    }
+  }
+
 
   @Override
   public int[] getAccessTypeList() {
@@ -73,7 +103,7 @@ public class SnowflakeHVDatabaseMeta extends BaseDatabaseMeta implements Databas
 
   @Override
   public String getDriverClass() {
-    return "com.snowflake.client.jdbc.SnowflakeDriver";
+    return DRIVER_CLASS;
   }
 
   @Override

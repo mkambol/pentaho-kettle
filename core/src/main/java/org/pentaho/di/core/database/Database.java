@@ -592,6 +592,29 @@ public class Database implements VariableSpace, LoggingObjectInterface {
   }
 
   /**
+   * Wraps the given driver in DelegatingDriver, and registers with
+   * DriverManager.
+   * Necessary when a driver is present in a Classloader besides the DriverManager
+   * classloader
+   * Part of POC
+   * TODO ->  avoid re-registering drivers that are already present.
+   * To do that, I considered adding an unwrap method to DelegatingDriver,
+   * and then checking the registeredDrivers in DriverManager for the presense
+   * of the existing driver.
+   * That might avoid maintaining the registeredDrivers collection used
+   * in the method above, assuming we refactor connectUsingClass to
+   * use the new registerDriver method.
+   */
+  public static void registerDriver( Class driver ) throws KettleDatabaseException {
+    try {
+      DriverManager.registerDriver( new DelegatingDriver( (Driver) driver.newInstance() ) );
+    } catch ( SQLException | InstantiationException | IllegalAccessException e ) {
+      throw new KettleDatabaseException( BaseMessages.getString( PKG,
+        "Database.Exception.UnableToFindClassMissingDriver", driver.getCanonicalName(), "" ), e );
+    }
+  }
+
+  /**
    * Disconnect from the database and close all open prepared statements.
    */
   public synchronized void disconnect() {

@@ -23,6 +23,7 @@
 package org.pentaho.di.core.database;
 
 import org.junit.Test;
+import org.pentaho.di.plugins.databases.SnowflakeHVDatabaseMeta;
 
 import java.util.HashMap;
 
