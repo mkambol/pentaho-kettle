@@ -769,12 +769,6 @@ public class Trans implements VariableSpace, NamedParams, HasLogChannelInterface
 
     ExtensionPointHandler.callExtensionPoint( log, KettleExtensionPoint.TransformationPrepareExecution.id, this );
 
-    transMeta.disposeEmbeddedMetastoreProvider();
-    if ( transMeta.getMetastoreLocatorOsgi() != null ) {
-      transMeta.setEmbeddedMetastoreProviderKey(
-        transMeta.getMetastoreLocatorOsgi().setEmbeddedMetastore( transMeta.getEmbeddedMetaStore() ) );
-    }
-
     checkCompatibility();
 
     // Set the arguments on the transformation...
@@ -1444,8 +1438,6 @@ public class Trans implements VariableSpace, NamedParams, HasLogChannelInterface
         if ( transMeta.isCapturingStepPerformanceSnapShots() && stepPerformanceSnapShotTimer != null ) {
           stepPerformanceSnapShotTimer.cancel();
         }
-
-        transMeta.disposeEmbeddedMetastoreProvider();
 
         setFinished( true );
         setRunning( false ); // no longer running

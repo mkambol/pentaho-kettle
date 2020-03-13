@@ -406,7 +406,6 @@ public class Job extends Thread implements VariableSpace, NamedParams, HasLogCha
         shutdownHeartbeat( heartbeat );
 
         ExtensionPointHandler.callExtensionPoint( log, KettleExtensionPoint.JobFinish.id, this );
-        jobMeta.disposeEmbeddedMetastoreProvider();
         log.logDebug( BaseMessages.getString( PKG, "Job.Log.DisposeEmbeddedMetastore" ) );
 
         fireJobFinishListeners();
@@ -631,11 +630,6 @@ public class Job extends Thread implements VariableSpace, NamedParams, HasLogCha
     JobExecutionExtension extension = new JobExecutionExtension( this, prevResult, jobEntryCopy, true );
     ExtensionPointHandler.callExtensionPoint( log, KettleExtensionPoint.JobBeforeJobEntryExecution.id, extension );
 
-    jobMeta.disposeEmbeddedMetastoreProvider();
-    if ( jobMeta.getMetastoreLocatorOsgi() != null ) {
-      jobMeta.setEmbeddedMetastoreProviderKey( jobMeta.getMetastoreLocatorOsgi().setEmbeddedMetastore( jobMeta
-          .getEmbeddedMetaStore() ) );
-    }
 
     if ( extension.result != null ) {
       prevResult = extension.result;

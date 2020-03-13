@@ -59,6 +59,7 @@ import org.pentaho.di.core.parameters.UnknownParamException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.undo.TransAction;
+import org.pentaho.di.core.util.MemoizingSupplier;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.variables.Variables;
@@ -91,6 +92,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 public abstract class AbstractMeta implements ChangedFlagInterface, UndoInterface, HasDatabasesInterface, VariableSpace,
   EngineMetaInterface, NamedParams, HasSlaveServersInterface, AttributesInterface, HasRepositoryInterface,
@@ -180,7 +182,26 @@ public abstract class AbstractMeta implements ChangedFlagInterface, UndoInterfac
   @VisibleForTesting
   protected NamedClusterEmbedManager namedClusterEmbedManager;
 
-  protected String embeddedMetastoreProviderKey;
+
+  /**
+   * memoize the metastorekey, with a 5 second timeout for expiration after access
+   * on expiration, calls {@link #disposeEmbeddedMetastoreProvider} to clear
+   * the key from MetastoreLocatorOsgi and KettleVFS.
+   */
+  private Supplier<String> memoizedEmbeddedMetastoreKey =
+    new MemoizingSupplier<>( this::getEmbeddedMetastoreKey, 5000, this::disposeEmbeddedMetastoreProvider );
+
+
+  /**
+   * Registers the embeddedMetastore with the MetastoreLocatorOsgi and returns the key the locator has assigned.
+   */
+  private String getEmbeddedMetastoreKey() {
+    if ( getMetastoreLocatorOsgi() != null ) {
+      return getMetastoreLocatorOsgi().setEmbeddedMetastore( getEmbeddedMetaStore() );
+    } else {
+      return null;
+    }
+  }
 
   /**
    * If this is null, we load from the default shared objects file : $KETTLE_HOME/.kettle/shared.xml
@@ -2050,20 +2071,16 @@ public abstract class AbstractMeta implements ChangedFlagInterface, UndoInterfac
     return namedClusterEmbedManager;
   }
 
-  public void disposeEmbeddedMetastoreProvider() {
-    KettleVFS.closeEmbeddedFileSystem( embeddedMetastoreProviderKey );
-    if ( embeddedMetastoreProviderKey != null ) {
-      //Dispose of embedded metastore for this run
-      getMetastoreLocatorOsgi().disposeMetastoreProvider( embeddedMetastoreProviderKey );
+  public Void disposeEmbeddedMetastoreProvider( String key ) {
+    if ( getMetastoreLocatorOsgi() != null ) {
+      KettleVFS.closeEmbeddedFileSystem( key );
+      getMetastoreLocatorOsgi().disposeMetastoreProvider( key );
     }
+    return null;
   }
 
   public String getEmbeddedMetastoreProviderKey() {
-    return embeddedMetastoreProviderKey;
-  }
-
-  public void setEmbeddedMetastoreProviderKey( String embeddedMetastoreProviderKey ) {
-    this.embeddedMetastoreProviderKey = embeddedMetastoreProviderKey;
+    return memoizedEmbeddedMetastoreKey.get();
   }
 
   @Override

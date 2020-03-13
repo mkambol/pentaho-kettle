@@ -25,6 +25,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.Props;
@@ -95,24 +98,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+@RunWith( MockitoJUnitRunner.class )
 public class AbstractMetaTest {
-  AbstractMeta meta;
-  ObjectId objectId;
-  Repository repo;
+  AbstractMeta meta = new AbstractMetaStub();
+  ;
+  @Mock private ObjectId objectId;
+  @Mock private Repository repo;
+  @Mock private IMetaStore metastore;
 
   @ClassRule public static RestorePDIEngineEnvironment env = new RestorePDIEngineEnvironment();
+
+  @Mock private MetastoreLocatorOsgi mockMetastoreLocatorOsgi;
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
     PluginRegistry.addPluginType( DatabasePluginType.getInstance() );
     PluginRegistry.init();
-  }
-
-  @Before
-  public void setUp() throws Exception {
-    meta = new AbstractMetaStub();
-    objectId = mock( ObjectId.class );
-    repo = mock( Repository.class );
   }
 
   @Test
@@ -242,7 +243,7 @@ public class AbstractMetaTest {
     List<DatabaseMeta> list = Arrays.asList( db2, db1 );
     meta.setDatabases( list );
     assertEquals( 2, meta.nrDatabases() );
-    assertEquals( "db1", meta.getDatabaseNames()[0] );
+    assertEquals( "db1", meta.getDatabaseNames()[ 0 ] );
     assertEquals( 0, meta.indexOfDatabase( db1 ) );
     meta.removeDatabase( -1 );
     assertEquals( 2, meta.nrDatabases() );
@@ -375,11 +376,11 @@ public class AbstractMetaTest {
     assertNull( meta.nextUndo() );
     StepMeta fromMeta = mock( StepMeta.class );
     StepMeta toMeta = mock( StepMeta.class );
-    Object[] from = new Object[]{ fromMeta };
-    Object[] to = new Object[]{ toMeta };
-    int[] pos = new int[0];
-    Point[] prev = new Point[0];
-    Point[] curr = new Point[0];
+    Object[] from = new Object[] { fromMeta };
+    Object[] to = new Object[] { toMeta };
+    int[] pos = new int[ 0 ];
+    Point[] prev = new Point[ 0 ];
+    Point[] curr = new Point[ 0 ];
 
     meta.addUndo( from, to, pos, prev, curr, AbstractMeta.TYPE_UNDO_NEW, false );
     assertNotNull( meta.viewThisUndo() );
@@ -484,7 +485,7 @@ public class AbstractMetaTest {
     assertNull( meta.getVariable( "var1" ) );
     VariableSpace vars = mock( VariableSpace.class );
     when( vars.getVariable( "var1" ) ).thenReturn( "x" );
-    when( vars.listVariables() ).thenReturn( new String[]{ "var1" } );
+    when( vars.listVariables() ).thenReturn( new String[] { "var1" } );
     meta.copyVariablesFrom( vars );
     assertEquals( "x", meta.getVariable( "var1", "y" ) );
   }
@@ -498,7 +499,7 @@ public class AbstractMetaTest {
 
     meta.environmentSubstitute( "${param}" );
     verify( vars, times( 1 ) ).environmentSubstitute( "${param}" );
-    String[] params = new String[]{ "${param}" };
+    String[] params = new String[] { "${param}" };
     meta.environmentSubstitute( params );
     verify( vars, times( 1 ) ).environmentSubstitute( params );
   }
@@ -511,7 +512,7 @@ public class AbstractMetaTest {
     meta.setInternalKettleVariables( vars );
 
     RowMetaInterface rowMeta = mock( RowMetaInterface.class );
-    Object[] data = new Object[0];
+    Object[] data = new Object[ 0 ];
     meta.fieldSubstitute( "?{param}", rowMeta, data );
     verify( vars, times( 1 ) ).fieldSubstitute( "?{param}", rowMeta, data );
   }
@@ -700,13 +701,13 @@ public class AbstractMetaTest {
     meta.initializeVariablesFrom( null );
     VariableSpace parent = mock( VariableSpace.class );
     when( parent.getVariable( "var1" ) ).thenReturn( "x" );
-    when( parent.listVariables() ).thenReturn( new String[]{ "var1" } );
+    when( parent.listVariables() ).thenReturn( new String[] { "var1" } );
     meta.initializeVariablesFrom( parent );
     assertEquals( "x", meta.getVariable( "var1" ) );
     assertNotNull( meta.listVariables() );
     VariableSpace newVars = mock( VariableSpace.class );
     when( newVars.getVariable( "var2" ) ).thenReturn( "y" );
-    when( newVars.listVariables() ).thenReturn( new String[]{ "var2" } );
+    when( newVars.listVariables() ).thenReturn( new String[] { "var2" } );
     meta.shareVariablesWith( newVars );
     assertEquals( "y", meta.getVariable( "var2" ) );
     Map<String, String> props = new HashMap<>();
@@ -763,11 +764,14 @@ public class AbstractMetaTest {
   }
 
   @Test
-  public void testGetSetEmbeddedMetastoreProviderKey() throws Exception {
-    assertNull( meta.getEmbeddedMetastoreProviderKey() );
+  public void testEmbeddedMetastoreProviderKeyIsMemoized() {
     String keyValue = "keyValue";
-    meta.setEmbeddedMetastoreProviderKey( keyValue );
+    meta.setMetastoreLocatorOsgi( mockMetastoreLocatorOsgi );
+    when( mockMetastoreLocatorOsgi.setEmbeddedMetastore( meta.getEmbeddedMetaStore() ) ).thenReturn( keyValue );
     assertEquals( keyValue, meta.getEmbeddedMetastoreProviderKey() );
+    assertEquals( keyValue, meta.getEmbeddedMetastoreProviderKey() );
+    verify( mockMetastoreLocatorOsgi, times( 1 ) )
+      .setEmbeddedMetastore( meta.getEmbeddedMetaStore() );
   }
 
   @Test
@@ -782,9 +786,12 @@ public class AbstractMetaTest {
   public void testMultithreadHammeringOfListener() throws Exception {
 
     CountDownLatch latch = new CountDownLatch( 3 );
-    AbstractMetaListenerThread th1 = new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
-    AbstractMetaListenerThread th2 = new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
-    AbstractMetaListenerThread th3 = new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
+    AbstractMetaListenerThread th1 =
+      new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
+    AbstractMetaListenerThread th2 =
+      new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
+    AbstractMetaListenerThread th3 =
+      new AbstractMetaListenerThread( meta, 2000, latch ); // do 2k random add/delete/fire
 
     Thread t1 = new Thread( th1 );
     Thread t2 = new Thread( th2 );
@@ -836,12 +843,12 @@ public class AbstractMetaTest {
 
     @Override
     public String[] getFilterNames() {
-      return new String[0];
+      return new String[ 0 ];
     }
 
     @Override
     public String[] getFilterExtensions() {
-      return new String[0];
+      return new String[ 0 ];
     }
 
     @Override
@@ -886,7 +893,6 @@ public class AbstractMetaTest {
       return null;
     }
   }
-
 
 
   private class AbstractMetaListenerThread implements Runnable {
